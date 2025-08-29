@@ -30,4 +30,48 @@ uw71coords<- read.csv(paste0(data_dir,"UW71coordinates_long.csv"))
 ratings_matrix<- read.csv(paste0(data_dir,"set_all_mat.csv"))
 matplotlib_scales<- read.csv(paste0(data_dir,"matplotlib_colorscales.csv"))
 
+colnames(ratings_matrix)[1]<-"concept"
+colnames(ratings_matrix)[-1]<- gsub('X','',colnames(ratings_matrix)[-1])
+
+```
+
+```{r}
+ratings_matrix_emotion<- ratings_matrix%>%filter(concept%in% c("angry","happy","fearful","disgust","sad"))
+
+ratings_matrix_emotion_long<- ratings_matrix_emotion%>%
+  pivot_longer(-concept,names_to = 'color_index',values_to = 'rating')
+
+ratings_matrix_emotion_long$color_index <- as.integer(ratings_matrix_emotion_long$color_index)
+```
+
+```{r}
+ratings_matrix_emotions_long<- left_join(ratings_matrix_emotion_long,uw71coords, by = 'color_index')%>%dplyr::select(concept, color_index, rating, L, a, b, C, H)
+```
+
+```{r}
+colorimetric_reg <- function(emotion, ratings_df) {
+  reg_model<- lm(rating ~ L + I(cos(H * (pi/180))) + I(sin(H * (pi/180))) + I(cos(2 * H * (pi/180))) + I(sin(2 * H * (pi/180))) + C, data = ratings_df)
+  print(emotion)
+  ### print the model summary
+  print(summary(reg_model))
+   return(list(model = reg_model))
+}
+
+emotions <- unique(ratings_matrix_emotions_long$concept)
+model_results <- list()
+for (emotion in emotions) {
+  emotion_data <- ratings_matrix_emotions_long %>% filter(concept == emotion)
+  model_results[[emotion]] <- colorimetric_reg(emotion, emotion_data)$model
+}
+```
+
+```{r}
+matplotlib_scales$angry_pred<- predict(model_results[['angry']], newdata = matplotlib_scales)
+matplotlib_scales$happy_pred<- predict(model_results[['happy']], newdata = matplotlib_scales)
+matplotlib_scales$fearful_pred<- predict(model_results[['fearful']], newdata = matplotlib_scales)
+matplotlib_scales$disgust_pred<- predict(model_results[['disgust']], newdata = matplotlib_scales)
+matplotlib_scales$sad_pred<- predict(model_results[['sad']], newdata = matplotlib_scales)
+
+write.csv(matplotlib_scales, paste0(results_dir,'matplotlib_colorscales_w_predictions.csv'), row.names = FALSE)
+
 ```
