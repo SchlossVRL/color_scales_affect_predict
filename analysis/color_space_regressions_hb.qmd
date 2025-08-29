@@ -1,0 +1,33 @@
+---
+title: "Color Scales Affect Predictions"
+author: "Kushin Mukherjee & Halle Braun"
+format: html
+editor: visual
+---
+
+### Goal: Fit color space regression models for each emotion separately and use these models to predict associations for each of the colors in our different matplotlib scales
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+
+analysis_dir<- getwd()
+
+data_dir <-paste0(analysis_dir,'/../data/')
+### if data_dir doesn't exist create it
+if (!dir.exists(data_dir)) {
+  dir.create(data_dir)
+}
+
+results_dir <-paste0(analysis_dir,'/../results/')
+### if results_dir doesn't exist create it
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir)
+}
+uw71coords<- read.csv(paste0(data_dir,"UW71coordinates_long.csv"))
+ratings_matrix<- read.csv(paste0(data_dir,"set_all_mat.csv"))
+matplotlib_scales<- read.csv(paste0(data_dir,"matplotlib_colorscales.csv"))
+
+```
