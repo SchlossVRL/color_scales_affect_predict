@@ -12,7 +12,6 @@
 library(raster)
 library(dplyr)
 
-
 # better rounding function (i.e., normal rounding)
 # converts to integer if digits = 0
 round2 <- function(x, digits = 0) {
@@ -31,18 +30,15 @@ round2 <- function(x, digits = 0) {
 
 
 # function to rescale rasters from ≥0 Mg/ha to a range of 0-100 
-get.rescaled.raster <- function(f, returnInt = T) {
-	
-	# local raster path
-	f.local <- paste0('~/data/harris30m/tif/', f)
+get.rescaled.raster <- function(f, returnInt = T, deleteInput = T) {
 	
 	# download tile
-	if (!file.exists(f.local)) {
-		system(paste0('gsutil -m cp gs://uw-ks-data/harris30m/tiles1000/', f, ' ~/data/harris30m/tif/'), ignore.stdout = T, ignore.stderr = T)
+	if (!file.exists(f)) {
+		system(paste0('gsutil -m cp gs://uw-ks-data/harris30m/tiles1000/', basename(f), ' ', dirname(f), '/'), ignore.stdout = T, ignore.stderr = T)
 	}
 	
 	# read raster
-	r <- raster(f.local)
+	r <- raster(f)
 	v <- values(r)
 	
 	# get meaningful bounds (mg/ha)
@@ -63,8 +59,11 @@ get.rescaled.raster <- function(f, returnInt = T) {
 	}
 	names(r) <- 'value'
 	
-	return(r)
+	if (deleteInput) {
+		file.remove(inp.tif)
+	}
 	
+	return(r)
 }
 
 # rotate matrix 90 degrees clockwise
@@ -72,37 +71,14 @@ clockwise90 <- function(matrix) {
 	t(apply(matrix, 2, rev))
 }
 
-# rotate matrix 180 degrees clockwise
-clockwise180 <- function(matrix) {
-	matrix[nrow(matrix):1, ncol(matrix):1]
-}
-
-# rotate matrix 270 degrees clockwise
-clockwise270 <- function(matrix) {
-	apply(t(matrix), 2, rev)
-}
-
-# flip matrix along the X direction
-flipX <- function(matrix) {
-	matrix[, ncol(matrix):1]
-}
-
-# flip matrix along the Y direction
-flipY <- function(matrix) {
-	matrix[nrow(matrix):1, ]
-}
-
-# function to save geotiff as a png file using a provided color scale
-save.map.png <- function(inp_tif, pal, out_png) {
-	
-	# open geotiff from disk, rescaled from 0 to 100
-	r <- get.rescaled.raster(inp_tif)
-	
-	# save map to PNG file on disk 
-	png(filename = out_png, width = 1000, height = 1000, units = 'px')
+# function to save a matrix as a png file using a provided color scale.
+# note, image() seems to plot a matrix rotated counter-clockwise 90 deg
+# relative to how it plots a raster object, so we counteract that by 
+# rotating the matrix 90 deg clockwise before plotting
+save.map.png <- function(matrix, file, pal) {
+	png(filename = file, width = 500, height = 500, units = 'px')
 	par(mar = c(0, 0, 0, 0))
-	image(r, axes = F, asp = 1, useRaster = T, col = pal)
+	image(clockwise90(matrix), axes = F, asp = 1, useRaster = T, col = pal)
 	dev.off()
-
 }
 
