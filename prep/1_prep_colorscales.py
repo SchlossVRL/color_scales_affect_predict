@@ -12,31 +12,6 @@ from colormath.color_conversions import convert_color
 
 # see https://matplotlib.org/stable/gallery/color/colormap_reference.html#sphx-glr-gallery-color-colormap-reference-py
 
-# color_scales = [
-#     # perceptually uniform sequential
-#     'viridis', 'plasma', 'inferno', 'magma', 'cividis',
-
-#     # sequential
-#     'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'YlOrBr', 
-#     'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu', 
-#     'PuBuGn', 'BuGn', 'YlGn',
-
-#     # sequential 2
-#     'bone', 'pink', 'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia', 
-#     'hot', 'afmhot', 'gist_heat', 'copper',
-
-#     # diverging
-#     'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu', 'RdYlGn', 
-#     'Spectral', 'coolwarm', 'bwr', 'seismic', 'berlin', 'managua', 'vanimo', 
-    
-#     # cyclic
-#     'twilight', 'twilight_shifted', 'hsv',
-
-#     # misc
-#     'ocean', 'gist_earth', 'terrain', 'gist_stern', 'gnuplot', 'gnuplot2', 
-#     'CMRmap', 'cubehelix', 'brg', 'rainbow','turbo'
-# ]
-
 color_scales = [
     
     # perceptually uniform sequential
@@ -53,7 +28,7 @@ color_scales = [
     'berlin', 'managua', 'vanimo',
 
     # misc
-    'gist_earth', 'rainbow'
+    'gist_earth', 'turbo'
 ]
 
 len(color_scales) # 40
@@ -111,4 +86,6 @@ for color_scale_name in color_scales:
 df = pd.DataFrame(rows, columns=["colorscale", "index", "R", "G", "B", "L", "C", "H"])
 
 # export to CSV
-df.to_csv("outputs/matplotlib_colorscales.csv", index=False)
+df.to_csv("../data/matplotlib_colorscales.csv", index=False)
+
+
