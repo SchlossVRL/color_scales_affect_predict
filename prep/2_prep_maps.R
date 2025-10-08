@@ -60,10 +60,8 @@ for (i in 1:num.maps) {
 	# convert to matrix (drops geo-spatial attributes)
 	m1 <- as.matrix(ra)
 
-	# rotate matrix
-	m2 <- clockwise90(m1)
-	m3 <- clockwise90(m2)
-	m4 <- clockwise90(m3)
+	# rotate matrix 180 degrees
+	m2 <- clockwise90(clockwise90(m1))
 
 	cat(' Saving colormaps:\n')
 	pb <- txtProgressBar(min = 0, max = num.pals, initial = 0, width = 60, style = 3)
