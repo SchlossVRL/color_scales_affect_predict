@@ -4,7 +4,7 @@
 # params
 # -------------------------------------------------------------------
 
-out.dir <- '../data/maps/'
+out.dir <- '../data/maps'
 
 # -------------------------------------------------------------------
 # setup
@@ -14,7 +14,8 @@ source('functions.R')
 
 # list of maps
 map.id.list <- c(2, 5, 7, 10, 12, 13, 15, 23, 26, 27)
-num.maps <- length(map.id.list) # 10
+num.maps <- length(map.id.list)
+num.maps # 10
 
 # get initial tile set
 df.maps <- read.csv('https://github.com/SchlossVRL/color_scales_affect/raw/refs/heads/main/scripts/output/stats_filtered_tiles_set1.csv', stringsAsFactors = F)
@@ -35,6 +36,7 @@ df.pals <- read.csv('../data/matplotlib_colorscales.csv', stringsAsFactors = F) 
 # get list of color scale names
 pal.names <- unique(df.pals$colorscale)
 num.pals <- length(pal.names)
+num.pals # 40
 
 # -------------------------------------------------------------------
 # process maps
@@ -75,16 +77,16 @@ for (i in 1:num.maps) {
 			pull(hex)
 		
 		# create filenames
-		f1 <- paste0(out.dir, 'map_', sprintf('%02d', map.id), '_1_', pal.name, '.png')
-		f2 <- paste0(out.dir, 'map_', sprintf('%02d', map.id), '_2_', pal.name, '.png')
-		f3 <- paste0(out.dir, 'map_', sprintf('%02d', map.id), '_3_', pal.name, '.png')
-		f4 <- paste0(out.dir, 'map_', sprintf('%02d', map.id), '_4_', pal.name, '.png')
-		
+		f1 <- sprintf('%s/map_%02d_%s_1.png', out.dir, map.id, pal.name)
+		f2 <- sprintf('%s/map_%02d_%s_2.png', out.dir, map.id, pal.name)
+		f3 <- sprintf('%s/map_%02d_%s_3.png', out.dir, map.id, pal.name)
+		f4 <- sprintf('%s/map_%02d_%s_4.png', out.dir, map.id, pal.name)
+
 		# save maps
-		save.map.png(m1, f1, pal)
-		save.map.png(m2, f2, pal)
-		save.map.png(m3, f3, pal)
-		save.map.png(m4, f4, pal)
+		save.map.png(m1, f1, pal)       # original map, original pal
+		save.map.png(m1, f2, rev(pal))  # original map, reversed pal
+		save.map.png(m2, f3, pal)       # rotated map,  original pal
+		save.map.png(m2, f4, rev(pal))  # rotated map,  reversed pal
 		
 		setTxtProgressBar(pb, j)
 	}
