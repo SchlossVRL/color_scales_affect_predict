@@ -32,7 +32,7 @@ cond_combs =  ['_'.join(combination) for combination in combinations]
 
 # Write the dictionary to the output file
 with open(output_path, 'w') as f:
-    f.write('var affect_list = ["calm", "exciting", "positive", "negative", "serious", "playful", "trustworthy", "disturbing"];')
+    f.write('var affect_list = ["angry", "happy", "fearful", "disgust", "sad"];')
     f.write('\n')
     f.write('var im2cond_dict = ' + json.dumps(output_dict, indent=2) + ';')
     f.write('\n')
