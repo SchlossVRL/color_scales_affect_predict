@@ -25,7 +25,7 @@
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
 
-
+    
 </head>
 
 <body>
@@ -215,10 +215,8 @@
                         <p style="font-size:25px;line-height:18px;">${affect_list[2]}</p>
                         <p style="font-size:25px;line-height:18px;">${affect_list[3]}</p>
                         <p style="font-size:25px;line-height:18px;">${affect_list[4]}</p>
-                        <p style="font-size:25px;line-height:18px;">${affect_list[5]}</p>
-                        <p style="font-size:25px;line-height:18px;">${affect_list[6]}</p>
-                        <p style="font-size:25px;line-height:18px;">${affect_list[7]}</p>
                     </div>
+            
 
                     <!-- Grid section -->
                    <div style="display: flex; justify-content: center; padding-top: 15px;">
@@ -418,10 +416,10 @@
                                 concept: concept,
                                 repetition: repetition,
                                 map_id: this_map.match(/\d{2}(?=\.png)/)[0], //extracts the map id from the image path
-                                //change these 3
-                                hue: im2cond_dict[this_map]['hue'],
-                                lightness: im2cond_dict[this_map]['lightness'],
-                                saturation: im2cond_dict[this_map]['saturation'],
+                                //change these 3 (were hue, lightness, saturation)
+                                map_nums: im2cond_dict[this_map]['map_nums'],
+                                scale_name: im2cond_dict[this_map]['scale_name'],
+                                orientation_code: im2cond_dict[this_map]['orientation_code'],
                             }
 
                         };
