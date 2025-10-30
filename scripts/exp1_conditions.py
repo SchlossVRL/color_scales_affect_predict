@@ -5,7 +5,7 @@ from itertools import combinations, product
 # Define the directory and output file
 output_path = '../exp1_conditions.js'
 
-map_nums =['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40']
+map_nums =['02', '05', '07', '10', '12', '13', '15', '23', '26', '27']
 scale_name = ["berlin", "Blues","BrBG", "BuGn", "BuPu", " bwr", "gist_earth", "GnBu", "Greens", "Greys", "inferno", "magma", "managua", "Oranges", "OrRd", "PlYG", "plasma", "PRGn", "PuBu", "PuBuGn", "PuOr", "PuRd", "Purples", "RdBu", "Rdgy", "RdPu", "RdYlBu", "RdYlGn", "Reds", "seismic", "Spectral", "turbo", "vanimo", "viridis", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"]
 orientation_code = ['1','2', '3', '4']
 
@@ -22,9 +22,13 @@ conditions = get_color_combinations()
 
 output_dict = {}
 for condition in conditions:
-    output_dict[condition] = {'map_nums':condition.split('_')[0].split('/')[1],
-                              'scale_name':condition.split('_')[1],
-                              'orientation_code':condition.split('_')[2]}
+    # prepend 'map_' to the key
+    new_key = condition.replace('images/', 'images/map_')
+    output_dict[new_key] = {
+        'map_nums': condition.split('_')[0].split('/')[1],
+        'scale_name': condition.split('_')[1],
+        'orientation_code': condition.split('_')[2]
+    }
     
 
 combinations = product(map_nums,scale_name,orientation_code)
