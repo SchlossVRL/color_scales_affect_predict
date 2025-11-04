@@ -390,11 +390,25 @@
                 console.log("image_paths:", image_paths.slice(0, 10));
                 console.log("im2cond_dict keys:", Object.keys(im2cond_dict).slice(0, 10));
 
+                for (let ii = 0; i < image_paths.length; ii++) {
+                    let path = image_paths[i].trim(); // remove any extra spaces
+                    console.log(path, "exists in im2cond_dict?", path in im2cond_dict);
+                }
+
+
                 for (j = 0; j < Object.keys(image_paths).length; j++) {
                     for (repetition = 1; repetition < 3; repetition++) {
 
+                        let img = image_paths[j];
+                        console.log(im2cond_dict[img]); // check this
+                        console.log(im2cond_dict[img].map_nums)
+
 
                         this_map = image_paths[color_order[j]];
+
+                        if (!im2cond_dict[this_map]) {
+                            console.error("Missing in im2cond_dict:", this_map);
+                        }
                         /*console.log("this_map:", this_map,
                             "map_id:", this_map.match(/map_(\d{2})/)[1],
                             "im2cond_dict entry:", im2cond_dict[this_map]);
