@@ -71,6 +71,11 @@ clockwise90 <- function(matrix) {
 	t(apply(matrix, 2, rev))
 }
 
+# mirror a matrix horizontally
+mirror <- function(matrix) {
+	t(apply(matrix, 1, rev))
+}
+
 # function to save a matrix as a png file using a provided color scale.
 # note, image() seems to plot a matrix rotated counter-clockwise 90 deg
 # relative to how it plots a raster object, so we counteract that by 

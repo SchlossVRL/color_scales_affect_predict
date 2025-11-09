@@ -4,13 +4,13 @@
 # params
 # -------------------------------------------------------------------
 
-out.dir <- '../data/maps'
+out.dir <- 'images'
 
 # -------------------------------------------------------------------
 # setup
 # -------------------------------------------------------------------
 
-source('functions.R')
+source('prep/functions.R')
 
 # list of maps
 map.id.list <- c(2, 5, 7, 10, 12, 13, 15, 23, 26, 27)
@@ -30,7 +30,7 @@ df.f <- df.maps %>%
 stopifnot(nrow(df.f) == num.maps)
 
 # get color scales
-df.pals <- read.csv('../data/matplotlib_colorscales.csv', stringsAsFactors = F) %>% 
+df.pals <- read.csv('data/matplotlib_colorscales.csv', stringsAsFactors = F) %>% 
 	mutate(hex = rgb(R, G, B, maxColorValue = 1))
 
 # get list of color scale names
@@ -44,53 +44,73 @@ num.pals # 40
 
 # reduce resolution and transpose maps
 for (i in 1:num.maps) {
-	
 	cat(paste0('MAP ', i, '/', num.maps, ':\n'))
-	
+
 	map.id <- df.f$map_id[i]
 	cat(paste(' Map ID:', map.id), fill = T)
 
-	inp.tif <- paste0('../data/', df.f$file[i])
+	inp.tif <- paste0('data/', df.f$file[i])
 	cat(paste(' Input:', inp.tif), fill = T)
-	
+
 	# get raster values, rescaled (from 0 to 100) and converted to integer vector
 	r <- get.rescaled.raster(inp.tif, returnInt = F, deleteInput = T)
 
 	# reduce resolution from 1000x1000 to 500x500 pixels (to save storage space)
-	ra <- aggregate(r, fact = 2, fun = mean)
+	ra <- aggregate(r, fact = 4, fun = mean)
 
 	# convert to matrix (drops geo-spatial attributes)
-	m1 <- as.matrix(ra)
+	m.000.d <- as.matrix(ra)
 
-	# rotate matrix 180 degrees
-	m2 <- clockwise90(clockwise90(m1))
+	# rotate matrix 90, 180, and 270 degrees
+	m.090.d <- clockwise90(m.000.d)
+	m.180.d <- clockwise90(m.090.d)
+	m.270.d <- clockwise90(m.180.d)
+
+	# mirror matrices
+	m.000.m <- mirror(m.000.d)
+	m.090.m <- clockwise90(m.000.m)
+	m.180.m <- clockwise90(m.090.m)
+	m.270.m <- clockwise90(m.180.m)
 
 	cat(' Saving colormaps:\n')
-	pb <- txtProgressBar(min = 0, max = num.pals, initial = 0, width = 60, style = 3)
+	pb <- txtProgressBar(
+		min = 0,
+		max = num.pals,
+		initial = 0,
+		width = 60,
+		style = 3
+	)
 	for (j in 1:num.pals) {
- 
 		# get color palette
 		pal.name <- pal.names[j]
-		pal <- df.pals %>% 
-			filter(colorscale == pal.name) %>% 
+		pal <- df.pals %>%
+			filter(colorscale == pal.name) %>%
 			arrange(index) %>%
 			pull(hex)
-		
-		# create filenames
-		f1 <- sprintf('%s/map_%02d_%s_1.png', out.dir, map.id, pal.name)
-		f2 <- sprintf('%s/map_%02d_%s_2.png', out.dir, map.id, pal.name)
-		f3 <- sprintf('%s/map_%02d_%s_3.png', out.dir, map.id, pal.name)
-		f4 <- sprintf('%s/map_%02d_%s_4.png', out.dir, map.id, pal.name)
 
-		# save maps
-		save.map.png(m1, f1, pal)       # original map, original pal
-		save.map.png(m1, f2, rev(pal))  # original map, reversed pal
-		save.map.png(m2, f3, pal)       # rotated map,  original pal
-		save.map.png(m2, f4, rev(pal))  # rotated map,  reversed pal
-		
+		# save maps with naming convetion:
+		# map[mapid]_[colorscale]_scale[Def/Rev]_orient[Def/Mir]_[rotation].png
+		save.map.png(m.000.d, sprintf('%s/map%02d_%s_scaleDef_orientDef_000.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.090.d, sprintf('%s/map%02d_%s_scaleDef_orientDef_090.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.180.d, sprintf('%s/map%02d_%s_scaleDef_orientDef_180.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.270.d, sprintf('%s/map%02d_%s_scaleDef_orientDef_270.png', out.dir, map.id, pal.name), pal)
+
+		save.map.png(m.000.d, sprintf('%s/map%02d_%s_scaleRev_orientDef_000.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.090.d, sprintf('%s/map%02d_%s_scaleRev_orientDef_090.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.180.d, sprintf('%s/map%02d_%s_scaleRev_orientDef_180.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.270.d, sprintf('%s/map%02d_%s_scaleRev_orientDef_270.png', out.dir, map.id, pal.name), rev(pal))
+
+		save.map.png(m.000.m, sprintf('%s/map%02d_%s_scaleDef_orientMir_000.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.090.m, sprintf('%s/map%02d_%s_scaleDef_orientMir_090.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.180.m, sprintf('%s/map%02d_%s_scaleDef_orientMir_180.png', out.dir, map.id, pal.name), pal)
+		save.map.png(m.270.m, sprintf('%s/map%02d_%s_scaleDef_orientMir_270.png', out.dir, map.id, pal.name), pal)
+
+		save.map.png(m.000.m, sprintf('%s/map%02d_%s_scaleRev_orientMir_000.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.090.m, sprintf('%s/map%02d_%s_scaleRev_orientMir_090.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.180.m, sprintf('%s/map%02d_%s_scaleRev_orientMir_180.png', out.dir, map.id, pal.name), rev(pal))
+		save.map.png(m.270.m, sprintf('%s/map%02d_%s_scaleRev_orientMir_270.png', out.dir, map.id, pal.name), rev(pal))
+
 		setTxtProgressBar(pb, j)
 	}
 	close(pb)
-	
-	
 }
