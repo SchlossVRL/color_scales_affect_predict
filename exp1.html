@@ -54,7 +54,7 @@
 
             var jsPsych = initJsPsych();
             var timeline = [];
-            latinSquareArray = latinSquare(40);
+            latinSquareArray = latinSquare(80);
 
             const subject_id = jsPsych.randomization.randomID(10);
 
@@ -71,17 +71,17 @@
             var ip = Object.values(map_ids);
             console.log('number of maps:', ip.length);
             console.log('number of scales:', color_scales.length);
-            console.log(' conditions:', color_scale_assignment[14]);
             var image_paths = [];
             for (var i = 0; i < color_scales.length; i++) {
                  
                 assignment_index = color_scale_assignment[i];
                 map_index = ip[assignment_index].split('_')[0];
                 // console.log('map index:', map_index);
-                type_index = ip[assignment_index].split('_')[1];
+                orientation_index = ip[assignment_index].split('_')[1];
+                rotation_index = ip[assignment_index].split('_')[2];
                 map_name = color_scales[i];
                 // console.log('map name:', map_name);
-                image_paths.push('images/map_' + map_index + "_"+ map_name + '_'+type_index+'.png');
+                image_paths.push('images/map' + map_index + "_"+ map_name +"_"+ orientation_index + "_" + rotation_index + '.png');
                 // image_paths.push('images/' + ip[i] + "_" + map_name + '.png');
                 // console.log(image_paths);
 
@@ -449,9 +449,9 @@
                                 image_path: this_map,
                                 concept: concept,
                                 repetition: repetition,
-                                map_id: this_map.match(/map_(\d{2})/)[1], //extracts the map id from the image path
+                                map_id: this_map.match(/map(\d{2})/)[1], //extracts the map id from the image path
                                 //change these 3 (were hue, lightness, saturation)
-                                map_nums: im2cond_dict[this_map]['map_nums'],
+                                map_num: im2cond_dict[this_map]['map_num'],
                                 scale_name: im2cond_dict[this_map]['scale_name'],
                                 orientation_code: im2cond_dict[this_map]['orientation_code'],
                             }

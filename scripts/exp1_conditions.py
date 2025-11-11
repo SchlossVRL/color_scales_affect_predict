@@ -8,6 +8,9 @@ output_path = '../exp1_conditions.js'
 map_nums =['02', '05', '07', '10', '12', '13', '15', '23', '26', '27']
 scale_name = [
     
+
+    ### example map name = map15_inferno_scaleDef_orientDef_000.png
+
     # perceptually uniform sequential
     'viridis', 'plasma', 'inferno', 'magma', 'cividis',
 
@@ -23,12 +26,15 @@ scale_name = [
 
     # misc
     'gist_earth', 'turbo'
+
 ]
 print(f"Total number of color scales: {len(scale_name)}")
-orientation_code = ['1','2', '3', '4']
+orientation_code = ['orientDef', 'orientMir']
+rotate_code = ['000','090', '180', '270']
+mapping_code = ['scaleDef', 'scaleRev']
 
 def get_color_combinations():
-    combinations = product(map_nums,scale_name,orientation_code)
+    combinations = product(map_nums,scale_name,mapping_code,orientation_code,rotate_code)
     cond_combs =  ['_'.join(combination) for combination in combinations]
     cond_combs = ['images/'+x+'.png' for x in cond_combs]
     return cond_combs
@@ -41,17 +47,22 @@ conditions = get_color_combinations()
 output_dict = {}
 for condition in conditions:
     # prepend 'map_' to the key
-    new_key = condition.replace('images/', 'images/map_')
+    new_key = condition.replace('images/', 'images/map')
     output_dict[new_key] = {
-        'map_nums': condition.split('_')[0].split('/')[1],
+        'map_num': condition.split('_')[0].split('/')[1],
         'scale_name': condition.split('_')[1],
-        'orientation_code': condition.split('_')[2].split('.png')[0]
+        'mapping_code': condition.split('_')[2],
+        'orientation_code': condition.split('_')[3],
+        'rotate_code': condition.split('_')[4].split('.')[0]
     }
     
 
 # combinations = product(map_nums,scale_name,orientation_code)
-combinations = product(map_nums,orientation_code)
+combinations = product(map_nums,orientation_code,rotate_code)
 map_ids =  ['_'.join(combination) for combination in combinations]
+
+scale_combs = product(scale_name,mapping_code)
+scale_combs =  ['_'.join(combination) for combination in scale_combs]
 
 # Write the dictionary to the output file
 with open(output_path, 'w') as f:
@@ -61,6 +72,6 @@ with open(output_path, 'w') as f:
     f.write('\n')
     f.write('var map_ids = ' + json.dumps(map_ids, indent=2) + ';')
     f.write('\n')
-    f.write('var color_scales = ' + json.dumps(scale_name, indent=2) + ';')
+    f.write('var color_scales = ' + json.dumps(scale_combs, indent=2) + ';')
 
 print(f"File written to {output_path}")
