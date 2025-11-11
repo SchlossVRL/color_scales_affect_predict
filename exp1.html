@@ -94,6 +94,38 @@
 
 
 
+        // Group image paths by color scale
+        var color_scale_groups = {};
+
+        for (var k = 0; k < image_paths.length; k++) {
+            var path = image_paths[k];
+            // console.log(path);
+            // // Extract filename from path
+            // var fname = path.split('/').pop();
+            // Extract color scale (second component after splitting by '_')
+            var parts = path.split('_');
+            var color_scale = parts[1];
+            // console.log('color scale:', color_scale);
+        
+            
+            if (!color_scale_groups[color_scale]) {
+                color_scale_groups[color_scale] = [];
+            }
+            color_scale_groups[color_scale].push(path);
+        }
+
+        // Select one random item from each color scale group
+        var selected_image_paths = [];
+        for (var scale in color_scale_groups) {
+            var paths = color_scale_groups[scale];
+            var random_index = Math.floor(Math.random() * paths.length);
+            selected_image_paths.push(paths[random_index]);
+        }
+
+
+
+
+
 
             // make a list of all the values in the dict 'maps'
             // var image_paths = Object.values(maps);
@@ -195,13 +227,14 @@
             }
             // timeline.push(age_lang_demo);
             
-            anchoring_grid = jsPsych.randomization.shuffle(image_paths);
+            anchoring_grid = jsPsych.randomization.shuffle(selected_image_paths);
+            affect_list = jsPsych.randomization.shuffle(affect_list);
 
             console.log('grid', anchoring_grid)
             console.log('og', image_paths)
             var instructions = {
                 type: jsPsychHtmlSliderResponse,
-                stimulus: `<div style='text-align:left; font-size:20px; line-height:25px; width: 1400px;'>
+                stimulus: `<div style='text-align:left; font-size:20px; line-height:25px; width: 1000px;'>
                                 During this experiment you will be asked to rate how much you associate maps with\
                     different concepts.<br> Below, you can see some examples of the maps you will be asked to rate. Above the maps
                     is the list of concepts.<br>You will be asked\
@@ -217,17 +250,23 @@
                     click partway between the middle point and right side of the scale.\
                     You will be asked to rate each map for a given concept before moving on to the next concept.<br>Press the
                     'Continue' button for instructions on how to use the slider.\
-                    <br>
+                    <br><br>
                 </div>
 
                 <div style="width: 500px; margin: 0 auto;">
                     <!-- Centered text paragraphs -->
                     <div style="text-align: center; width: 500px;">
-                        <p style="font-size:20px; line-height:15px;">${affect_list[0]}</p>
-                        <p style="font-size:20px; line-height:15px;">${affect_list[1]}</p>
+                        <p style="font-size:25px; line-height:15px;">
+                            ${affect_list[0]}&nbsp;&nbsp;&nbsp;&nbsp;
+                            ${affect_list[1]}&nbsp;&nbsp;&nbsp;&nbsp;
+                            ${affect_list[2]}&nbsp;&nbsp;&nbsp;&nbsp;
+                            ${affect_list[3]}&nbsp;&nbsp;&nbsp;&nbsp;
+                            ${affect_list[4]}
+                        </p>
+                        <!-- <p style="font-size:20px; line-height:15px;">${affect_list[1]}</p>
                         <p style="font-size:20px;line-height:15px;">${affect_list[2]}</p>
                         <p style="font-size:20px;line-height:15px;">${affect_list[3]}</p>
-                        <p style="font-size:20px;line-height:15px;">${affect_list[4]}</p>
+                        <p style="font-size:20px;line-height:15px;">${affect_list[4]}</p> -->
                     </div>
             
 
@@ -278,7 +317,7 @@
 
             timeline.push(slider_instructions);
             console.log(affect_list)
-            affect_list = jsPsych.randomization.shuffle(affect_list);
+    
             for (i = 0; i < 4; i++) {
                 let practice_concept = affect_list[0];
                 let task
@@ -409,7 +448,7 @@
 
 
                 for (j = 0; j < Object.keys(image_paths).length; j++) {
-                    for (repetition = 1; repetition < 3; repetition++) {
+                    for (repetition = 1; repetition < 2; repetition++) {
 
                         let img = image_paths[j];
                         // console.log(im2cond_dict[img]); // check this
@@ -454,6 +493,8 @@
                                 map_num: im2cond_dict[this_map]['map_num'],
                                 scale_name: im2cond_dict[this_map]['scale_name'],
                                 orientation_code: im2cond_dict[this_map]['orientation_code'],
+                                mapping_code: im2cond_dict[this_map]['mapping_code'],
+                                rotation_code: im2cond_dict[this_map]['rotate_code'],
                             }
 
                         };
@@ -464,13 +505,22 @@
 
                 }
                 trial_block = jsPsych.randomization.shuffle(trial_block);
+
+                /// insert a break halfway through the block
+                var halfway_index = Math.floor(trial_block.length / 2);
+                var break_trial = {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: "<p>You are doing great!<br></br> You are halway done with the current block. When you are ready to continue, click the 'Continue' button.</p>",
+                    choices: ['Continue'],
+                };
+                trial_block.splice(halfway_index, 0, break_trial);
                 timeline = _.concat(timeline, trial_block);
 
 
                 if (i == affect_list.length - 1) {
                     var block_break = {
                         type: jsPsychHtmlButtonResponse,
-                        stimulus: "<p>Great Job! You're done rating all concepts!<br></br></p>",
+                        stimulus: "<p>Great Job! You are done rating all concepts!<br></br></p>",
                         choices: ['Next'],
                     };
                     timeline.push(block_break)
