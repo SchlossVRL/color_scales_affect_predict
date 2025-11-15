@@ -1,0 +1,69 @@
+---
+title: "Experiment 1 Analyses"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(psych)
+```
+
+```{r}
+
+analysis_dir<- getwd()
+
+data_dir <-paste0(analysis_dir,'/../data/exp1')
+### if data_dir doesn't exist create it
+if (!dir.exists(data_dir)) {
+  dir.create(data_dir)
+}
+
+results_dir <-paste0(analysis_dir,'/../results/')
+### if results_dir doesn't exist create it
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir)
+}
+data_files <-list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
+print(paste0('we have data from ',length(data_files),' participants'))
+
+
+
+df_list <- lapply(data_files, read.csv)
+
+experiment_data_raw<- bind_rows(df_list)
+
+ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-response')
+
+ratings_trials_exp<- ratings_trials %>% filter(practiceTrial != 'true')
+
+ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
+ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
+
+
+angry_ratings<- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='angry')
+fearful_ratings  <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='fearful')
+happy_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='happy')
+sad_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='sad')
+disgust_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='disgust')
+```
+
+```{r}
+
+predicted_ratings<- read.csv('../results/matplotlib_colorscales_w_predictions.csv')
+
+preds <- predicted_ratings %>% 
+  group_by(colorscale) %>% 
+  summarize(
+    mean_angry = mean(angry_pred),
+    mean_fearful = mean(fearful_pred), 
+    mean_happy = mean(happy_pred), 
+    mean_sad = mean(sad_pred), 
+    mean_disgust = mean(disgust_pred)
+  )
+
+corr.test(angry_preds$mean_angry, angry_ratings$mean_response)
+corr.test(fearful_preds$mean_fearful, fearful_ratings$mean_response)
+corr.test(happy_preds$mean_happy, happy_ratings$mean_response)
+
+```
