@@ -66,29 +66,27 @@
             // const condition_num = 14;
 
             const color_scale_assignment = latinSquareArray[condition_num];
-            console.log('color scale assignments:', color_scale_assignment);
+
 
             var ip = Object.values(map_ids);
-            console.log('number of maps:', ip.length);
-            console.log('number of scales:', color_scales.length);
+        
             var image_paths = [];
             for (var i = 0; i < color_scales.length; i++) {
                  
                 assignment_index = color_scale_assignment[i];
                 map_index = ip[assignment_index].split('_')[0];
-                // console.log('map index:', map_index);
+     
                 orientation_index = ip[assignment_index].split('_')[1];
                 rotation_index = ip[assignment_index].split('_')[2];
                 map_name = color_scales[i];
-                // console.log('map name:', map_name);
+
                 image_paths.push('images/map' + map_index + "_"+ map_name +"_"+ orientation_index + "_" + rotation_index + '.png');
                 // image_paths.push('images/' + ip[i] + "_" + map_name + '.png');
-                // console.log(image_paths);
-
+     
 
             }
 
-            console.log('final image paths:', image_paths);
+
             // Set background color to gray //
             document.body.style.backgroundColor = "rgb(128,128,128)"
 
@@ -99,13 +97,10 @@
 
         for (var k = 0; k < image_paths.length; k++) {
             var path = image_paths[k];
-            // console.log(path);
-            // // Extract filename from path
-            // var fname = path.split('/').pop();
-            // Extract color scale (second component after splitting by '_')
+    
             var parts = path.split('_');
             var color_scale = parts[1];
-            // console.log('color scale:', color_scale);
+
         
             
             if (!color_scale_groups[color_scale]) {
@@ -127,10 +122,7 @@
 
 
 
-            // make a list of all the values in the dict 'maps'
-            // var image_paths = Object.values(maps);
-            // append the string 'patches71.png' to the list
-            // image_paths.push('maps_anchoring.png');
+           
             var preload = {
                 type: jsPsychPreload,
                 images: image_paths
@@ -202,7 +194,7 @@
                 button_label: "Start Experiment",
             };
 
-            // timeline.push(consentSign);
+            timeline.push(consentSign);
 
             // Overview instructions of experiment
             var overview_instructions = {
@@ -225,13 +217,12 @@
                 button_label: "Done",
                 randomize_question_order: false
             }
-            // timeline.push(age_lang_demo);
+            timeline.push(age_lang_demo);
             
             anchoring_grid = jsPsych.randomization.shuffle(selected_image_paths);
             affect_list = jsPsych.randomization.shuffle(affect_list);
 
-            console.log('grid', anchoring_grid)
-            console.log('og', image_paths)
+
             var instructions = {
                 type: jsPsychHtmlSliderResponse,
                 stimulus: `<div style='text-align:left; font-size:20px; line-height:25px; width: 1000px;'>
@@ -250,7 +241,7 @@
                     click partway between the middle point and right side of the scale.\
                     You will be asked to rate each map for a given concept before moving on to the next concept.<br>Press the
                     'Continue' button for instructions on how to use the slider.\
-                    <br><br>
+                    <br>
                 </div>
 
                 <div style="width: 500px; margin: 0 auto;">
@@ -272,7 +263,7 @@
 
                     <!-- Grid section -->
                    <div style="display: flex; justify-content: center; padding-top: 15px;">
-                    <div style="display: grid; grid-template-columns: repeat(10, 60px); grid-gap: 5px; width: auto;">
+                    <div style="display: grid; grid-template-columns: repeat(10, 55px); grid-gap: 5px; width: auto;">
                         ${[...Array(4)].map((_, row) =>
                     [...Array(10)].map((_, col) =>
                         `<img src="${anchoring_grid[row * 10 + col]}" alt="map" style="width: 100%;">`
@@ -295,7 +286,7 @@
                 include_button: true,
                 data: {
                     //change this img
-                    image_path: 'maps_anchoring.png',
+                    // image_path: 'maps_anchoring.png',
                     practiceTrial: true,
                 },
                 slider_width: 500
@@ -316,7 +307,7 @@
 
 
             timeline.push(slider_instructions);
-            console.log(affect_list)
+         
     
             for (i = 0; i < 4; i++) {
                 let practice_concept = affect_list[0];
@@ -376,8 +367,7 @@
                             upperLimit = -80;
                             lowerLimit = -110;
                         }
-                        console.log(slider_response)
-                        console.log(upperLimit, lowerLimit)
+             
                         if (slider_response <= upperLimit && slider_response >= lowerLimit) {
                             data.correct = true;
                         }
@@ -405,7 +395,7 @@
                 var comp1_loop = {
                     timeline: [rating_trial, rating_feedback],
                     loop_function: function (data) {
-                        console.log('data: ', data.values());
+                  
                         if (data.values()[0].correct == true) {
                             return false;
                         } else {
@@ -438,32 +428,19 @@
                 timeline.push(block_break0);
                 trial_block = [];
 
-                console.log("image_paths:", image_paths.slice(0, 10));
-                console.log("im2cond_dict keys:", Object.keys(im2cond_dict).slice(0, 10));
-
-                // for (let j = 0; j < image_paths.length; j++) {
-                //     let path = image_paths[j].trim(); // remove any extra spaces
-                //     console.log(path, "exists in im2cond_dict?", path in im2cond_dict);
-                // }
-
-
+     
                 for (j = 0; j < Object.keys(image_paths).length; j++) {
                     for (repetition = 1; repetition < 2; repetition++) {
 
                         let img = image_paths[j];
-                        // console.log(im2cond_dict[img]); // check this
-                        // console.log(im2cond_dict[img].map_nums)
-
+            
 
                         this_map = image_paths[color_order[j]];
 
                         if (!im2cond_dict[this_map]) {
                             console.error("Missing in im2cond_dict:", this_map);
                         }
-                        /*console.log("this_map:", this_map,
-                            "map_id:", this_map.match(/map_(\d{2})/)[1],
-                            "im2cond_dict entry:", im2cond_dict[this_map]);
-                        console.log(Object.keys(im2cond_dict).filter(k => k.includes("RdYlGn")));*/
+                   
                         // Define concept based on current exemplar
                         var concept = affect_list[i];
                         var rating_trial = {
@@ -668,7 +645,7 @@
             var debrief_script = {
                 type: jsPsychHtmlKeyboardResponse,
                 stimulus: '<div style="width:800px">Great job! You have finished the experiment.' +
-                    '<p> The goal of this experiment is to determine what factors influence the associations between emotions and maps <br>' +
+                    '<p> The goal of this experiment is to determine what factors influence the associations between emotions and maps. <br>' +
                     '<p> Others who participate in this study may have been shown different maps than the ones you did.\
                         Please do not inform other potential participants of the hypotheses in our experiment' +
                     '<p> Credit for your participation will be appear on SONA in the next few days.' +
