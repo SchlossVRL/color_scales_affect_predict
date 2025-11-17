@@ -10,7 +10,7 @@ mapid <- '02'
 pal <- 'berlin'
 
 # get list of pngs
-pngs <- list.files(path = '../data/maps', pattern = paste0(mapid, '_', pal), full.names = T)
+pngs <- list.files(path = 'images', pattern = paste0(mapid, '_', pal), full.names = T)
 
 # read pngs
 img1 <- readPNG(pngs[1])
@@ -27,15 +27,15 @@ make_img_plot <- function(img, title = NULL) {
 		theme_void() +
 		theme(
 			plot.margin = margin(0.5, 0, 0, 0, 'line'),
-			plot.title = element_text(hjust = 0.5, family = 'Helvetica', face = 'bold')
+			plot.title = element_text(hjust = 0.5, family = 'Helvetica', face = 'bold', size = 12)
 		)
 }
 
 # prepare plots
-p1 <- make_img_plot(img1, '1. No rotation, original scale')
-p2 <- make_img_plot(img2, '2. No rotation, reversed scale')
-p3 <- make_img_plot(img3, '3. Rotated 180, original scale')
-p4 <- make_img_plot(img4, '4. Rotated 180, reversed  scale')
+p1 <- make_img_plot(img1, basename(pngs[1]))
+p2 <- make_img_plot(img2, basename(pngs[2]))
+p3 <- make_img_plot(img3, basename(pngs[3]))
+p4 <- make_img_plot(img4, basename(pngs[4]))
 
 # arrange in a 2x2 grid with title
 p.row <- plot_grid(p1, NULL, p2, p3, NULL, p4, ncol = 3, rel_widths = c(1, -0.58, 1), labels = NULL)
