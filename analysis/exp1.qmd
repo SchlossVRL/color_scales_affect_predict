@@ -7,13 +7,18 @@ editor: visual
 ```{r}
 library(tidyverse)
 library(psych)
+# Install required packages if needed
+install.packages("osfr")
+
+# Load the package
+library(osfr)
 ```
 
 ```{r}
 
 analysis_dir<- getwd()
 
-data_dir <-paste0(analysis_dir,'/../data/exp1')
+data_dir <-paste0(analysis_dir,'/../data/exp_1')
 ### if data_dir doesn't exist create it
 if (!dir.exists(data_dir)) {
   dir.create(data_dir)
@@ -24,6 +29,31 @@ results_dir <-paste0(analysis_dir,'/../results/')
 if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
+
+
+
+osf_token <- readLines("../km_osf_pat.txt", warn = FALSE)[1]
+# Authenticate with OSF (you'll be prompted to generate a PAT token)
+osf_auth(token=osf_token)
+
+# Retrieve the OSF component
+osf_project <- osf_retrieve_node("cty4v")
+
+# List all files in the component
+files <- osf_ls_files(osf_project, n_max = Inf)
+
+
+# Download all files
+osf_download(files, path = data_dir, conflicts = "overwrite")
+
+# If you want to download files recursively from subdirectories:
+osf_download(osf_project, path = local_dir, recurse = TRUE, conflicts = "overwrite")
+
+```
+
+```{r}
+
+
 data_files <-list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
 print(paste0('we have data from ',length(data_files),' participants'))
 
@@ -62,8 +92,23 @@ preds <- predicted_ratings %>%
     mean_disgust = mean(disgust_pred)
   )
 
-corr.test(angry_preds$mean_angry, angry_ratings$mean_response)
-corr.test(fearful_preds$mean_fearful, fearful_ratings$mean_response)
-corr.test(happy_preds$mean_happy, happy_ratings$mean_response)
+results <- data.frame(
+  emotion = c("angry", "fearful", "happy", "sad", "disgust"),
+  correlation = c(
+    corr.test(preds$mean_angry, angry_ratings$mean_response)$r,
+    corr.test(preds$mean_fearful, fearful_ratings$mean_response)$r,
+    corr.test(preds$mean_happy, happy_ratings$mean_response)$r,
+    corr.test(preds$mean_sad, sad_ratings$mean_response)$r,
+    corr.test(preds$mean_disgust, disgust_ratings$mean_response)$r
+  ),
+  p_value = c(
+    corr.test(preds$mean_angry, angry_ratings$mean_response)$p,
+    corr.test(preds$mean_fearful, fearful_ratings$mean_response)$p,
+    corr.test(preds$mean_happy, happy_ratings$mean_response)$p,
+    corr.test(preds$mean_sad, sad_ratings$mean_response)$p,
+    corr.test(preds$mean_disgust, disgust_ratings$mean_response)$p
+  )
+)
 
+print(results)
 ```
