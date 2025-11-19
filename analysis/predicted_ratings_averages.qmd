@@ -40,10 +40,6 @@ data_dir <- paste0(current_dir,'/analysis/')
 data_files <- list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
 #print(paste0('we have data from ', length(data_files),' participants'))
 
-#assoc <- read_csv("texture_concept_associations_wide.csv")
-
-#semdist <- read_csv("best_ranges.csv")
-
 Predictions <- read_csv("matplotlib_colorscales_w_predictions.csv")
 ```
 
