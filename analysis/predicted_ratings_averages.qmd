@@ -1,0 +1,66 @@
+---
+title: "regression_averages_predicted"
+author: "Halle Braun"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+rm(list = ls())
+
+#list of packages
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid", "png", "cowplot", "magick", "purrr", "combinat", "ggimage", "dplyr", "tidyverse", "knitr", "readxl", "writexl", "tidytext", "forcats", "ggrepel", "stringr", "jsonlite")
+```
+
+```{r}
+
+install_and_load_packages <- function(packages) {
+  for(package in packages) {
+    if(!require(package, character.only = TRUE)) {
+      install.packages(package, dependencies = TRUE)
+      library(package, character.only = TRUE)
+    }
+  }
+}
+
+# Call the function with the list of packages
+install_and_load_packages(packages)
+```
+
+```{r}
+
+current_dir<- getwd()
+
+data_dir <- paste0(current_dir,'/analysis/')
+
+data_files <- list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
+#print(paste0('we have data from ', length(data_files),' participants'))
+
+Predictions <- read_csv("matplotlib_colorscales_w_predictions.csv")
+```
+
+```{r}
+
+library(dplyr)
+
+data <- read.csv("matplotlib_colorscales_w_predictions.csv")
+
+# Group by the colorscale and calculate the mean for each emotion prediction
+emotion_averages <- data %>%
+  group_by(colorscale) %>%  
+  summarise(
+    angry_avg = mean(angry_pred, na.rm = TRUE),
+    happy_avg = mean(happy_pred, na.rm = TRUE),
+    fearful_avg = mean(fearful_pred, na.rm = TRUE),
+    disgust_avg = mean(disgust_pred, na.rm = TRUE),
+    sad_avg = mean(sad_pred, na.rm = TRUE)
+  )
+```
+
+```{r}
+write.csv(emotion_averages, "predicted_emotion_ratings.csv", row.names = FALSE)
+```
