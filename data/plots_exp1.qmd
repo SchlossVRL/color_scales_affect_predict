@@ -1,0 +1,220 @@
+---
+title: "plots_exp1"
+author: "Halle Braun"
+format: html
+editor: visual
+---
+
+```{r}
+rm(list = ls())
+
+#list of packages
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid", "png", "cowplot", "magick", "purrr", "combinat", "ggimage", "dplyr", "tidyverse", "knitr", "readxl", "writexl", "tidytext", "forcats", "ggrepel", "stringr", "jsonlite")
+```
+
+```{r}
+install_and_load_packages <- function(packages) {
+  for(package in packages) {
+    if(!require(package, character.only = TRUE)) {
+      install.packages(package, dependencies = TRUE)
+      library(package, character.only = TRUE)
+    }
+  }
+}
+
+# Call the function with the list of packages
+install_and_load_packages(packages)
+```
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+data_dir<- getwd()
+
+data_dir <- paste0(current_dir, '/exp_1/')
+
+#analysis_dir <-paste0(analysis_dir,'/../predicted_emotion_ratings/')
+
+data_files <- list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
+print(paste0('we have data from ', length(data_files),' participants'))
+
+#assoc <- read_csv("texture_concept_associations_wide.csv")
+
+#semdist <- read_csv("best_ranges.csv")
+
+predicted_ratings <- read_csv("predicted_emotion_ratings.csv")
+```
+
+```{r}
+# convet ratings so they go from 0 to 1 instead of -200 to 200
+
+folder_path <- "exp_1"
+output_folder <- "converted_ratings"
+
+# Create output folder if it doesn't exist
+if (!dir.exists(output_folder)) {
+  dir.create(output_folder)
+}
+
+csv_files <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+
+normalize_rating <- function(x) {
+  return((x + 200) / 400)
+}
+
+for (file in csv_files) {
+  data <- read.csv(file)
+  
+  if ("response" %in% names(data)) {
+    # Ensure response column is numeric
+    data$response <- as.numeric(as.character(data$response))
+    
+    # Overwrite response column with normalized values
+    data$response <- normalize_rating(data$response)
+    
+    output_file <- file.path(output_folder, paste0("converted_", basename(file)))
+    write.csv(data, output_file, row.names = FALSE)
+  } else {
+    warning(paste("No 'response' column found in", file))
+  }
+}
+
+
+```
+
+```{r}
+
+library(tidyverse)
+
+ratings_files <- list.files("converted_ratings", pattern = "\\.csv$", full.names = TRUE)
+ratings_data <- bind_rows(lapply(ratings_files, read.csv))
+
+summary_data <- read.csv("predicted_emotion_ratings.csv") 
+
+summary_long <- summary_data %>%
+  pivot_longer(cols = ends_with("_avg"),
+               names_to = "concept",
+               values_to = "avg_rating") %>%
+  mutate(concept = str_remove(concept, "_avg"),
+         scale_name = colorscale) %>%
+  select(scale_name, concept, avg_rating)
+
+# Aggregate participant ratings by emotion + colorscale
+ratings_avg <- ratings_data %>%
+  group_by(scale_name, concept) %>%
+  summarise(mean_response = mean(response, na.rm = TRUE), .groups = "drop")
+
+# Merge aggregated ratings with summary averages
+merged_data <- ratings_avg %>%
+  inner_join(summary_long, by = c("scale_name", "concept"))
+
+emotion_terms <- c("angry", "happy", "fearful", "disgust", "sad")
+
+# Loop through each emotion and create a separate plot
+for (emotion in emotion_terms) {
+  emotion_data <- merged_data %>% filter(concept == emotion)
+  
+  p <- ggplot(emotion_data, aes(x = avg_rating, y = mean_response)) +
+    geom_point(color = "steelblue", size = 2.5) +
+    geom_smooth(method = "lm", se = FALSE, color = "darkgrey") +
+    geom_text(aes(label = scale_name), vjust = -0.5, size = 3) +   # <-- add +
+    labs(title = paste("Association for", emotion),
+         x = "Predicted Ratings",
+         y = "Actual Rating") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  
+  print(p)
+}
+  
+  ggsave(filename = paste0("plot_", emotion, "_avg.png"), plot = p, width = 6, height = 4)
+
+
+
+```
+
+\# saving the plots in their own pdf
+
+```{r}
+library(tidyverse)
+
+ratings_files <- list.files("converted_ratings", pattern = "\\.csv$", full.names = TRUE)
+ratings_data <- bind_rows(lapply(ratings_files, read.csv))
+
+summary_data <- read.csv("predicted_emotion_ratings.csv") 
+
+summary_long <- summary_data %>%
+  pivot_longer(cols = ends_with("_avg"),
+               names_to = "concept",
+               values_to = "avg_rating") %>%
+  mutate(concept = str_remove(concept, "_avg"),
+         scale_name = colorscale) %>%
+  select(scale_name, concept, avg_rating)
+
+ratings_avg <- ratings_data %>%
+  group_by(scale_name, concept) %>%
+  summarise(mean_response = mean(response, na.rm = TRUE), .groups = "drop")
+
+merged_data <- ratings_avg %>%
+  inner_join(summary_long, by = c("scale_name", "concept"))
+
+emotion_terms <- c("angry", "happy", "fearful", "disgust", "sad")
+
+# Loop through each emotion and save as separate PDF
+for (emotion in emotion_terms) {
+  emotion_data <- merged_data %>% filter(concept == emotion)
+  
+  p <- ggplot(emotion_data, aes(x = avg_rating, y = mean_response)) +
+    geom_point(color = "steelblue", size = 2.5) +
+    geom_smooth(method = "lm", se = FALSE, color = "darkgrey") +
+    geom_text(aes(label = scale_name), vjust = -0.5, size = 3) +
+    labs(title = paste("Association for", emotion),
+         x = "Predicted Ratings",
+         y = "Actual Rating") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+  
+  # Save each plot as its own PDF file
+  ggsave(filename = paste0("plot_", emotion, "_avg.pdf"),
+         plot = p, width = 7, height = 5)
+}
+
+```
+
+#code for plots that i got from anna that does not currently have data from our exp in it this is just in case i need it for later :)
+
+```{r}
+
+p_TV <- ggplot(predicted_ratings, aes(x = predicted_ratings,
+                                       y = max_capacity)) +
+  #geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey70") + 
+  #annotate("text", x = .90, y = 0.47, label = "Chance", color = "grey50", size = 8) +
+  geom_point(size = 2.5, color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 1) +
+  #coord_cartesian(xlim = c(0,1), ylim = c(0, 1), expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(
+    title = "Ratings for Sad",
+    x = "Predicted Rating",
+    y = " Actual Rating"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(color = "black", size = 24),
+    panel.background = element_blank(),       # Remove panel background
+    plot.background = element_blank(),        # Remove overall plot background
+    panel.grid.major = element_blank(),       # Remove major grid lines
+    panel.grid.minor = element_blank(),       # Remove minor grid lines
+    axis.line = element_line(color = "black") # Add axis lines
+  ) 
+  #coord_fixed(ratio = 1)
+
+p_TV
+```
