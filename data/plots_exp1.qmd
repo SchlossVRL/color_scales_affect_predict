@@ -51,8 +51,10 @@ print(paste0('we have data from ', length(data_files),' participants'))
 predicted_ratings <- read_csv("predicted_emotion_ratings.csv")
 ```
 
+\# converting ratings
+
 ```{r}
-# convet ratings so they go from 0 to 1 instead of -200 to 200
+# convert ratings so they go from 0 to 1 instead of -200 to 200
 
 folder_path <- "exp_1"
 output_folder <- "converted_ratings"
@@ -87,6 +89,8 @@ for (file in csv_files) {
 
 
 ```
+
+\# make plots
 
 ```{r}
 
@@ -128,8 +132,10 @@ for (emotion in emotion_terms) {
          x = "Predicted Ratings",
          y = "Actual Rating") +
     theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
-  
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold")) +
+    scale_x_continuous(limits = c(0, 1)) +   # force x-axis 0–1
+    scale_y_continuous(limits = c(0, 1))     # force y-axis 0–1
+    
   print(p)
 }
   
@@ -178,12 +184,37 @@ for (emotion in emotion_terms) {
          x = "Predicted Ratings",
          y = "Actual Rating") +
     theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+    theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold")) +
+    scale_x_continuous(limits = c(0, 1)) +   # force x-axis 0–1
+    scale_y_continuous(limits = c(0, 1))     # force y-axis 0–1
   
   # Save each plot as its own PDF file
   ggsave(filename = paste0("plot_", emotion, "_avg.pdf"),
          plot = p, width = 7, height = 5)
 }
+
+```
+
+#correlations grouped by emotion term and colorscale
+
+```{r}
+library(tidyverse)
+
+# Compute correlations per emotion across all colorscales
+cor_results <- merged_data %>%
+  group_by(concept) %>%
+  summarise(correlation = cor(avg_rating, mean_response, use = "complete.obs"),
+            .groups = "drop")
+
+# wide format
+cor_results_wide <- cor_results %>%
+  pivot_wider(names_from = concept, values_from = correlation)
+
+print(cor_results_wide)
+
+```
+
+```{r}
 
 ```
 
