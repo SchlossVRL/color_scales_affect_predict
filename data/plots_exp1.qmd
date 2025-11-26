@@ -37,7 +37,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```{r}
 data_dir<- getwd()
 
-data_dir <- paste0(current_dir, '/exp_1/')
+data_dir <- paste0(data_dir, '/exp_1/')
 
 #analysis_dir <-paste0(analysis_dir,'/../predicted_emotion_ratings/')
 
