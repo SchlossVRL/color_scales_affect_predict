@@ -50,4 +50,9 @@ rsconnect/
 
 .DS_Store
 
-.ipynb_checkpointskm_osf_pat.txt
+.ipynb_checkpoints
+
+
+### Ignore osf auth
+
+km_osf_pat.txt
