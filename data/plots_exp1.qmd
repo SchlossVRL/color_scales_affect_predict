@@ -44,10 +44,6 @@ data_dir <- paste0(data_dir, '/exp_1/')
 data_files <- list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
 print(paste0('we have data from ', length(data_files),' participants'))
 
-#assoc <- read_csv("texture_concept_associations_wide.csv")
-
-#semdist <- read_csv("best_ranges.csv")
-
 predicted_ratings <- read_csv("predicted_emotion_ratings.csv")
 ```
 
@@ -139,7 +135,7 @@ for (emotion in emotion_terms) {
   print(p)
 }
   
-  ggsave(filename = paste0("plot_", emotion, "_avg.png"), plot = p, width = 6, height = 4)
+  #ggsave(filename = paste0("plot_", emotion, "_avg.png"), plot = p, width = 6, height = 4)
 
 
 
