@@ -7,8 +7,6 @@ editor: visual
 ```{r}
 library(tidyverse)
 library(psych)
-# Install required packages if needed
-install.packages("osfr")
 
 # Load the package
 library(osfr)
@@ -30,6 +28,12 @@ if (!dir.exists(results_dir)) {
   dir.create(results_dir)
 }
 
+plot_dir <- paste0(analysis_dir,'/../plots/')
+
+### if plot_dir doesn't exist create it
+if (!dir.exists(plot_dir)) {
+  dir.create(plot_dir)
+}
 
 
 osf_token <- readLines("../km_osf_pat.txt", warn = FALSE)[1]
@@ -47,7 +51,7 @@ files <- osf_ls_files(osf_project, n_max = Inf)
 osf_download(files, path = data_dir, conflicts = "overwrite")
 
 # If you want to download files recursively from subdirectories:
-osf_download(osf_project, path = local_dir, recurse = TRUE, conflicts = "overwrite")
+# osf_download(osf_project, path = local_dir, recurse = TRUE, conflicts = "overwrite")
 
 ```
 
@@ -67,48 +71,100 @@ ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-respon
 
 ratings_trials_exp<- ratings_trials %>% filter(practiceTrial != 'true')
 
+### every instance of 'gist' in the scale_name column should be replaced with 'gist_earth'
+ratings_trials_exp$scale_name <- gsub("gist", "gist_earth", ratings_trials_exp$scale_name)
+
 ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
 ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
 
+ratings_trials_exp_grouped <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_rating = mean(response))
 
-angry_ratings<- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='angry')
-fearful_ratings  <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='fearful')
-happy_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='happy')
-sad_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='sad')
-disgust_ratings <- ratings_trials_exp%>%group_by(concept,scale_name)%>%summarize(mean_response = mean(response))%>%filter(concept=='disgust')
+
+### get the number of unique participants per condition in ratings_trials_exp
+
+subject_dist<-ratings_trials_exp %>% 
+  group_by(condition_num) %>% 
+  summarize(num_participants = n_distinct(subject_id))
+
+
+
+### can you list all the numbers between 0 and 79 not present in subject_dist$condition_num
+missing_conditions <- setdiff(0:79, subject_dist$condition_num)
+print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
 ```
 
 ```{r}
 
 predicted_ratings<- read.csv('../results/matplotlib_colorscales_w_predictions.csv')
 
-preds <- predicted_ratings %>% 
+### assuming equal presence of each color
+predicted_ratings_grouped_uniform <- predicted_ratings %>% 
   group_by(colorscale) %>% 
   summarize(
-    mean_angry = mean(angry_pred),
-    mean_fearful = mean(fearful_pred), 
-    mean_happy = mean(happy_pred), 
-    mean_sad = mean(sad_pred), 
-    mean_disgust = mean(disgust_pred)
+    angry = mean(angry_pred),
+    fearful = mean(fearful_pred), 
+    happy = mean(happy_pred), 
+    sad = mean(sad_pred), 
+    disgust = mean(disgust_pred)
   )
+
+predicted_ratings_grouped_uniform <- predicted_ratings_grouped_uniform %>%
+  rename(scale_name = colorscale)
+
+predicted_ratings_grouped_uniform_long <- predicted_ratings_grouped_uniform%>%pivot_longer(cols=c(angry,fearful,happy,sad,disgust), names_to='concept', values_to='mean_prediction')
+
+### combine predicted_ratings_grouped_uniform_long with ratings_trials_exp_grouped matching on concept and scale_name
+
+analysis_df <- ratings_trials_exp_grouped %>%
+  inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name"))
+
+```
+
+```{r}
+
+### what is the overall correlation
+
+print(corr.test(analysis_df$mean_rating, analysis_df$mean_prediction))
+
 
 results <- data.frame(
   emotion = c("angry", "fearful", "happy", "sad", "disgust"),
   correlation = c(
-    corr.test(preds$mean_angry, angry_ratings$mean_response)$r,
-    corr.test(preds$mean_fearful, fearful_ratings$mean_response)$r,
-    corr.test(preds$mean_happy, happy_ratings$mean_response)$r,
-    corr.test(preds$mean_sad, sad_ratings$mean_response)$r,
-    corr.test(preds$mean_disgust, disgust_ratings$mean_response)$r
+    corr.test(analysis_df%>%filter(concept=='angry')%>%pull(mean_rating), analysis_df%>%filter(concept=='angry')%>%pull(mean_prediction))$r,
+    corr.test(analysis_df%>%filter(concept=='fearful')%>%pull(mean_rating), analysis_df%>%filter(concept=='fearful')%>%pull(mean_prediction))$r,
+    corr.test(analysis_df%>%filter(concept=='happy')%>%pull(mean_rating), analysis_df%>%filter(concept=='happy')%>%pull(mean_prediction))$r,
+    corr.test(analysis_df%>%filter(concept=='sad')%>%pull(mean_rating), analysis_df%>%filter(concept=='sad')%>%pull(mean_prediction))$r,
+    corr.test(analysis_df%>%filter(concept=='disgust')%>%pull(mean_rating), analysis_df%>%filter(concept=='disgust')%>%pull(mean_prediction))$r
   ),
   p_value = c(
-    corr.test(preds$mean_angry, angry_ratings$mean_response)$p,
-    corr.test(preds$mean_fearful, fearful_ratings$mean_response)$p,
-    corr.test(preds$mean_happy, happy_ratings$mean_response)$p,
-    corr.test(preds$mean_sad, sad_ratings$mean_response)$p,
-    corr.test(preds$mean_disgust, disgust_ratings$mean_response)$p
+  corr.test(analysis_df%>%filter(concept=='angry')%>%pull(mean_rating), analysis_df%>%filter(concept=='angry')%>%pull(mean_prediction))$p,
+  corr.test(analysis_df%>%filter(concept=='fearful')%>%pull(mean_rating), analysis_df%>%filter(concept=='fearful')%>%pull(mean_prediction))$p,
+  corr.test(analysis_df%>%filter(concept=='happy')%>%pull(mean_rating), analysis_df%>%filter(concept=='happy')%>%pull(mean_prediction))$p,
+  corr.test(analysis_df%>%filter(concept=='sad')%>%pull(mean_rating), analysis_df%>%filter(concept=='sad')%>%pull(mean_prediction))$p,
+  corr.test(analysis_df%>%filter(concept=='disgust')%>%pull(mean_rating), analysis_df%>%filter(concept=='disgust')%>%pull(mean_prediction))$p
   )
 )
 
 print(results)
 ```
+```{r}
+### make a faceted scatterplot of predicted vs. observed ratings for each emotion (e.g.,  analysis_df$mean_rating vs. analysis_df$mean_prediction))
+
+p<- ggplot(analysis_df, aes(x=mean_prediction, y=mean_rating)) +
+  geom_point() +
+  geom_smooth(method='lm', se=FALSE, color='#06c7bd') +
+  facet_wrap(~concept) +
+  labs(x='Predicted Ratings', y='Human Ratings') +
+  theme_linedraw()+
+  scale_y_continuous(limits= c(0,1),expand = c(0, 0))+
+  scale_x_continuous(limits= c(0,1),expand = c(0, 0))+
+  theme(panel.spacing.y = unit(1, "lines"),
+        panel.spacing.x = unit(1.5, "lines"),
+        plot.margin = margin(10, 20, 10, 10, "pt") )
+
+ggsave(paste0(plot_dir,'exp_1_scatterplot_predicted_vs_observed_ratings.pdf'), plot = p, width = 8, height = 5, dpi = 300)
+
+p
+
+```
+
