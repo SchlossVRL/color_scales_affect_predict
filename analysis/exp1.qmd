@@ -91,6 +91,10 @@ subject_dist<-ratings_trials_exp %>%
 ### can you list all the numbers between 0 and 79 not present in subject_dist$condition_num
 missing_conditions <- setdiff(0:79, subject_dist$condition_num)
 print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
+
+
+length(ratings_trials_exp%>%filter(image_path == "images/map02_viridis_scaleRev_orientMir_090.png")%>%pull(condition_num)%>%unique())
+ratings_trials_exp%>%filter(condition_num==61)%>%pull(image_path)%>%unique()
 ```
 
 ```{r}
