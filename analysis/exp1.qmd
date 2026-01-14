@@ -151,6 +151,7 @@ results <- data.frame(
 
 print(results)
 ```
+
 ```{r}
 ### make a faceted scatterplot of predicted vs. observed ratings for each emotion (e.g.,  analysis_df$mean_rating vs. analysis_df$mean_prediction))
 
@@ -171,4 +172,3 @@ ggsave(paste0(plot_dir,'exp_1_scatterplot_predicted_vs_observed_ratings.pdf'), p
 p
 
 ```
-
