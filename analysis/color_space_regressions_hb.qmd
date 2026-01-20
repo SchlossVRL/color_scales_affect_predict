@@ -28,7 +28,7 @@ if (!dir.exists(results_dir)) {
 }
 uw71coords<- read.csv(paste0(data_dir,"UW71coordinates_long.csv"))
 ratings_matrix<- read.csv(paste0(data_dir,"set_all_mat.csv"))
-matplotlib_scales<- read.csv(paste0(data_dir,"matplotlib_colorscales.csv"))
+matplotlib_scales<- read.csv(paste0(data_dir,"matplotlib_qualitative_colorscales.csv"))
 
 colnames(ratings_matrix)[1]<-"concept"
 colnames(ratings_matrix)[-1]<- gsub('X','',colnames(ratings_matrix)[-1])
@@ -72,6 +72,6 @@ matplotlib_scales$fearful_pred<- predict(model_results[['fearful']], newdata = m
 matplotlib_scales$disgust_pred<- predict(model_results[['disgust']], newdata = matplotlib_scales)
 matplotlib_scales$sad_pred<- predict(model_results[['sad']], newdata = matplotlib_scales)
 
-write.csv(matplotlib_scales, paste0(results_dir,'matplotlib_colorscales_w_predictions.csv'), row.names = FALSE)
+write.csv(matplotlib_scales, paste0(results_dir,'matplotlib_qualitative_colorscales_w_predictions.csv'), row.names = FALSE)
 
 ```
