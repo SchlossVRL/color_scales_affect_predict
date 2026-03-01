@@ -71,6 +71,13 @@ ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-respon
 
 ratings_trials_exp<- ratings_trials %>% filter(practiceTrial != 'true')
 
+### filter ratings_trials_exp such that we have only 1 subject_id per condition_num
+set.seed(56)  
+ratings_trials_exp <- ratings_trials_exp %>%
+  group_by(condition_num) %>%
+  filter(subject_id %in% sample(unique(subject_id), 1)) %>%
+  ungroup()
+
 ### every instance of 'gist' in the scale_name column should be replaced with 'gist_earth'
 ratings_trials_exp$scale_name <- gsub("gist", "gist_earth", ratings_trials_exp$scale_name)
 
@@ -92,9 +99,9 @@ subject_dist<-ratings_trials_exp %>%
 missing_conditions <- setdiff(0:79, subject_dist$condition_num)
 print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
 
-
-length(ratings_trials_exp%>%filter(image_path == "images/map02_viridis_scaleRev_orientMir_090.png")%>%pull(condition_num)%>%unique())
-ratings_trials_exp%>%filter(condition_num==61)%>%pull(image_path)%>%unique()
+# 
+# length(ratings_trials_exp%>%filter(image_path == "images/map02_viridis_scaleDef_orientMir_000.png")%>%pull(subject_id)%>%unique())
+# ratings_trials_exp%>%filter(condition_num==61)%>%pull(image_path)%>%unique()
 ```
 
 ```{r}
