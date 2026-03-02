@@ -54,7 +54,7 @@
 
             var jsPsych = initJsPsych();
             var timeline = [];
-            latinSquareArray = latinSquare(80);
+            latinSquareArray = latinSquare(40);
 
             const subject_id = jsPsych.randomization.randomID(10);
 
@@ -76,21 +76,19 @@
 
 
             var ip = Object.values(map_ids);
+            const shift_conditions = ['lightshift', 'darkshift'];
         
             var image_paths = [];
             for (var i = 0; i < color_scales.length; i++) {
                  
                 assignment_index = color_scale_assignment[i];
                 map_index = ip[assignment_index].split('_')[0];
-     
-                orientation_index = ip[assignment_index].split('_')[1];
-                rotation_index = ip[assignment_index].split('_')[2];
-                shift_index = color_scales[i].split('_').slice(-1)[0];
-                map_name = color_scales[i].split('_').slice(0, -1).join('_');
+                rotation_index = ip[assignment_index].split('_')[1];
+                map_name = color_scales[i];
+                for (var shift_index = 0; shift_index < shift_conditions.length; shift_index++) {
 
-                image_paths.push('images/shifted_maps/map' + map_index + "_"+ map_name +"_"+ orientation_index + "_" + rotation_index + "_" + shift_index + '.png');
-                // image_paths.push('images/' + ip[i] + "_" + map_name + '.png');
-     
+                 image_paths.push('images/shifted_maps/map' + map_index + "_"+ map_name +"_"+ "orientDef" + "_" + rotation_index + "_" + shift_conditions[shift_index] + '.png');
+                }
 
             }
 
@@ -132,9 +130,15 @@
 
 
            
+            // Build ishihara image paths for preloading
+            var ishihara_images = [];
+            for (var p = 0; p <= 10; p++) {
+                ishihara_images.push('images/ishihara/ishihara-' + p + '.png');
+            }
+
             var preload = {
                 type: jsPsychPreload,
-                images: image_paths
+                images: image_paths.concat(ishihara_images)
             };
             jsPsych.data.addProperties({
                 subject_id: subject_id,
@@ -593,10 +597,14 @@
                         type: jsPsychSurveyHtmlForm,
                         preamble: '<div><p style="font-size:25px">Carefully type what number you see using digits (e.g., if you see 100, type "100" not "one hundred").<br>If you do not see a number, type "None".\
                             <br></p></div><div ><img src="images/ishihara/ishihara-' + whichPlate + '.png" alt="Ishihara Plate" style="height:500px"></div>',
-                        html: '<div><p><input name="number" type="text" /></div>',
+                        html: '<div><p><input name="number" type="text" required /></div>',
                         // trial_duration: 5000,
                         post_trial_gap: 250,
-                        data: { ishihara_plate: whichPlate, correct_response: answer }
+                        data: { ishihara_plate: whichPlate, correct_response: answer },
+                        on_load: function () {
+                            var input = document.querySelector('input[name="number"]');
+                            if (input) input.focus();
+                        }
                     };
                     timeline.push(ishihara_plate)
                     plateCounter[whichPlate] = 1;

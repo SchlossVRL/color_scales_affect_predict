@@ -43,10 +43,10 @@ for combo in product(map_nums, scale_name, mapping_code, orientation_code, rotat
     
 
 # combinations = product(map_nums,scale_name,orientation_code)
-combinations = product(map_nums,orientation_code,rotate_code)
+combinations = product(map_nums,rotate_code)
 map_ids =  ['_'.join(combination) for combination in combinations]
 
-scale_combs = product(scale_name,mapping_code,shift_code)
+scale_combs = product(scale_name,mapping_code)
 scale_combs =  ['_'.join(combination) for combination in scale_combs]
 
 # Write the dictionary to the output file
