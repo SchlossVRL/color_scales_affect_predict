@@ -38,6 +38,13 @@ if (!dir.exists(plot_dir)) {
 }
 
 
+
+```
+
+### OSF Download if needed
+
+```{r}
+
 osf_token <- readLines("../km_osf_pat.txt", warn = FALSE)[1]
 # Authenticate with OSF (you'll be prompted to generate a PAT token)
 osf_auth(token=osf_token)
@@ -56,6 +63,8 @@ osf_download(files, path = data_dir, conflicts = "overwrite")
 # osf_download(osf_project, path = local_dir, recurse = TRUE, conflicts = "overwrite")
 
 ```
+
+### Load data files
 
 ```{r}
 data_files <-list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
@@ -132,7 +141,7 @@ missing_conditions <- setdiff(0:79, subject_dist$condition_num)
 print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
 
 
-subject_dist
+write.csv(ratings_trials_exp_grouped, '../data/exp1_ratings_trials_exp_grouped.csv')
 
 
 # 
@@ -219,7 +228,7 @@ p
 ### Subsetting scales for future experiments (40 out of 80)
 
 ```{r}
-ratings_trials_exp_scale_mapping_grouped<- ratings_trials_exp%>%group_by(concept, scale_name, mapping_code)%>%summarize(mean_rating = mean(response))%>%ungroup()
+ratings_trials_exp_scale_mapping_grouped<- ratings_trials_exp%>%group_by(concept, scale_name)%>%summarize(mean_rating = mean(response))%>%ungroup()
 
 
 ratings_trials_exp_scale_mapping_grouped%>%
@@ -229,7 +238,7 @@ ratings_trials_exp_scale_mapping_grouped%>%
 
 map_x_concept_df <- ratings_trials_exp_scale_mapping_grouped %>%
   pivot_wider(
-    id_cols = c(scale_name, mapping_code), # These stay as rows
+    id_cols = c(scale_name), #  These stay as rows
     names_from = concept,                  # These values become column headers
     values_from = mean_rating,             # These values fill the cells
     names_prefix = "rating_"               # Optional: adds a prefix to make names meaningful
@@ -254,7 +263,7 @@ feature_matrix <- map_x_concept_df %>%
 dist_matrix <- as.matrix(dist(feature_matrix, method = "euclidean"))
 
 # 3. Greedy Selection Algorithm
-n_to_select <- 40
+n_to_select <- 20
 n_total <- nrow(map_x_concept_df)
 
 # Start by picking the two furthest points
@@ -283,14 +292,14 @@ print(nrow(diverse_set))
 head(diverse_set)
 
 
-diverse_set <- diverse_set %>%
-  mutate(
-    scale_name_R = if_else(
-      mapping_code == "scaleRev", 
-      paste0(scale_name, "_r"), 
-      as.character(scale_name)
-    )
-  )
+# diverse_set <- diverse_set %>%
+#   mutate(
+#     scale_name_R = if_else(
+#       mapping_code == "scaleRev", 
+#       paste0(scale_name, "_r"), 
+#       as.character(scale_name)
+#     )
+#   )
 ```
 
 ## Generating Shifted Maps
@@ -304,78 +313,106 @@ rgb_to_hex <- function(r, g, b) {
   rgb(r, g, b, maxColorValue = 1)
 }
 
+
+# Rotate matrix 90 degrees clockwise
+clockwise90 <- function(m) t(apply(m, 2, rev))
+
+# Mirror matrix (Left-Right flip)
+mirror_matrix <- function(m) m[, rev(seq_len(ncol(m)))]
+
+
 # 2. Setup Base Output Directory
 base_out_dir <- "../images/shifted_maps/"
 dir.create(base_out_dir, showWarnings = FALSE, recursive = TRUE)
+# Target map IDs
+target_ids <- c(23, 7, 15, 2, 27, 26, 5, 10, 13, 12)
 
-# 3. Outer Loop: Shift Type
-for(shift in c('darkshift', 'lightshift')){
+# Outer Loop: Shift Type
+for(shift in c('darkshift', 'lightshift')) {
   
-  # FIX: Ensure path points to the correct subdirectory if needed
-  # Assuming these CSVs are in the same directory as your color_defs
   inp_csv_path <- paste0("../data/map_values_V2_", shift, ".csv")
+  if (!file.exists(inp_csv_path)) next
   
-  # Create a subfolder for this specific shift to keep things clean
-  current_out_dir <- file.path(base_out_dir)
-  dir.create(current_out_dir, showWarnings = FALSE)
-  
-  if (!file.exists(inp_csv_path)) {
-    warning(paste("File not found:", inp_csv_path))
-    next
-  }
-  
-  # Load the map data values
   map_data <- fread(file = inp_csv_path, header = TRUE, data.table = FALSE)
 
-  # 4. Middle Loop: 40 Diverse Scales
+  # Loop through 20 Scales
   for (s in 1:nrow(diverse_set)) {
     
     current_scale_name <- diverse_set$scale_name[s]
-    current_mapping    <- diverse_set$mapping_code[s]
-    current_id         <- paste0(current_scale_name, "_", current_mapping)
-
     
-    # Extract and Convert Colors
+    # Prepare both color vectors (Default and Reversed)
     scale_colors <- color_defs %>%
       filter(colorscale == current_scale_name) %>%
       arrange(index) %>%
       mutate(hex = rgb_to_hex(R, G, B))
     
-    color_vector <- scale_colors$hex
+    col_def <- scale_colors$hex
+    col_rev <- rev(col_def)
     
-    # Manual Reverse if mapping is scaleRev
-    if (current_mapping == "scaleRev") {
-      color_vector <- rev(color_vector)
-    }
-    
-    if (length(color_vector) == 0) {
-      warning(paste("No color definitions found for:", current_scale_name))
-      next
-    }
+    cat(paste0("\nProcessing ", shift, " for scale: ", current_scale_name, "\n"))
 
-    cat(paste0("\nProcessing ", shift, ": ", current_id, " (", s, "/40)\n"))
-
-    # 5. Inner Loop: Map Generations
+    # Loop through Maps
     for (i in 1:nrow(map_data)) {
       
-      map_id <- map_data[i, 1]
-      map_id <- as.numeric(map_id)
-       if(map_id %in% c(23,  7, 15,  2, 27, 26,  5, 10, 13, 12)){
-      # Using current_out_dir (the subfolder) for the file path
-      out_png <- file.path(current_out_dir, paste0("map", sprintf("%02d",map_id), "_", current_id, "_",shift, ".png"))
       
-      # Process matrix
+      map_id_num <- as.numeric(map_data[i, 1])
+      if(!(map_id_num %in% target_ids)) next
+      
+      # Step A: Create the base aggregated matrix
       v <- as.numeric(map_data[i, -1])
-      m <- matrix(data = v, nrow = 1000, ncol = 1000)
-      m <- apply(array(m, c(4, 250, 4, 250)), c(2, 4), mean)
-      mrt <- t(apply(m, 1, rev)) 
+      m_base <- matrix(data = v, nrow = 1000, ncol = 1000)
+      m_250 <- apply(array(m_base, c(4, 250, 4, 250)), c(2, 4), mean)
       
-      # Save Image
-      png(filename = out_png, width = 500, height = 500, units = 'px')
-      par(mar = c(0, 0, 0, 0))
-      image(mrt, axes = FALSE, asp = 1, useRaster = TRUE, col = color_vector)
-      dev.off()
-       }
+      # Step B: Generate spatial orientations
+      # Define as list: Name = Matrix
+      orientations <- list(
+        "orientDef_000" = m_250,
+        "orientDef_090" = clockwise90(m_250),
+        "orientDef_180" = clockwise90(clockwise90(m_250)),
+        "orientDef_270" = clockwise90(clockwise90(clockwise90(m_250)))
+      )
+      
+      # Add mirrored versions
+      m_mirror <- mirror_matrix(m_250)
+      orientations[["orientMir_000"]] <- m_mirror
+      orientations[["orientMir_090"]] <- clockwise90(m_mirror)
+      orientations[["orientMir_180"]] <- clockwise90(clockwise90(m_mirror))
+      orientations[["orientMir_270"]] <- clockwise90(clockwise90(clockwise90(m_mirror)))
+
+      # Step C: Save out all combinations
+      for (o_name in names(orientations)) {
+        
+        # 1. Define filenames first
+        fname_def <- sprintf("map%02d_%s_scaleDef_%s_%s.png", map_id_num, current_scale_name, o_name, shift)
+        fname_rev <- sprintf("map%02d_%s_scaleRev_%s_%s.png", map_id_num, current_scale_name, o_name, shift)
+        
+        path_def <- file.path(base_out_dir, fname_def)
+        path_rev <- file.path(base_out_dir, fname_rev)
+
+        # 2. Check if BOTH exist to potentially skip matrix transformation
+        if (file.exists(path_def) && file.exists(path_rev)) {
+          next # Skip to the next orientation
+        }
+
+        # 3. Only perform the heavy matrix flip if we actually need to save a file
+        m_to_plot <- t(apply(orientations[[o_name]], 1, rev)) 
+        
+        # 4. Save ScaleDef version if it doesn't exist
+        if (!file.exists(path_def)) {
+          png(path_def, width = 500, height = 500)
+          par(mar = c(0,0,0,0))
+          image(m_to_plot, axes = FALSE, asp = 1, useRaster = TRUE, col = col_def)
+          dev.off()
+        }
+        
+        # 5. Save ScaleRev version if it doesn't exist
+        if (!file.exists(path_rev)) {
+          png(path_rev, width = 500, height = 500)
+          par(mar = c(0,0,0,0))
+          image(m_to_plot, axes = FALSE, asp = 1, useRaster = TRUE, col = col_rev)
+          dev.off()
+        }
+      }
     }
   }
 }
