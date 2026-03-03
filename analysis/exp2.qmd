@@ -1,0 +1,116 @@
+---
+title: "Experiment 2 Analyses"
+author: "Kushin Mukherjee"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(psych)
+library(stringr)
+library(proxy)
+
+# Load the package
+library(osfr)
+```
+
+```{r}
+
+analysis_dir<- getwd()
+
+data_dir <-paste0(analysis_dir,'/../data/exp_2')
+### if data_dir doesn't exist create it
+if (!dir.exists(data_dir)) {
+  dir.create(data_dir)
+}
+
+results_dir <-paste0(analysis_dir,'/../results/')
+### if results_dir doesn't exist create it
+if (!dir.exists(results_dir)) {
+  dir.create(results_dir)
+}
+
+plot_dir <- paste0(analysis_dir,'/../plots/')
+
+### if plot_dir doesn't exist create it
+if (!dir.exists(plot_dir)) {
+  dir.create(plot_dir)
+}
+
+```
+
+### OSF Download if needed
+
+```{r}
+
+osf_token <- readLines("../km_osf_pat.txt", warn = FALSE)[1]
+# Authenticate with OSF (you'll be prompted to generate a PAT token)
+osf_auth(token=osf_token)
+
+# Retrieve the OSF component
+osf_project <- osf_retrieve_node("6yqhd")
+
+# List all files in the component
+files <- osf_ls_files(osf_project, n_max = Inf)
+
+
+# Download all files
+osf_download(files, path = data_dir, conflicts = "overwrite")
+
+
+```
+
+### Load data files
+
+```{r}
+data_files <-list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
+print(paste0('we have data from ',length(data_files),' participants'))
+
+
+
+df_list <- lapply(data_files, read.csv)
+
+experiment_data_raw<- bind_rows(df_list)
+
+ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-response')
+
+ratings_trials_exp<- ratings_trials %>% filter(!practiceTrial %in% c('True','true'))
+
+### filter ratings_trials_exp such that we have only 1 subject_id per condition_num
+# set.seed(56)  
+# ratings_trials_exp <- ratings_trials_exp %>%
+#   group_by(condition_num) %>%
+#   filter(subject_id %in% sample(unique(subject_id), 1)) %>%
+#   ungroup()
+
+
+ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
+ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
+
+
+ratings_trials_exp_grouped <- ratings_trials_exp%>%group_by(concept,scale_name,shift_code)%>%summarize(mean_rating = mean(response))
+
+
+### get the number of unique participants per condition in ratings_trials_exp
+subject_dist<-ratings_trials_exp %>% 
+  group_by(condition_num) %>% 
+  summarize(num_participants = n_distinct(subject_id))
+
+
+
+### can you list all the numbers between 0 and 79 not present in subject_dist$condition_num
+missing_conditions <- setdiff(0:40, subject_dist$condition_num)
+print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
+
+
+write.csv(ratings_trials_exp_grouped, '../data/exp2_ratings_trials_exp_grouped.csv')
+
+```
+
+```{r}
+
+ratings_trials_exp_grouped%>%ggplot(aes(x=scale_name, y=mean_rating, col=shift_code, group=shift_code))+
+  geom_point()+ facet_grid(rows='concept')+geom_line()
+
+```
