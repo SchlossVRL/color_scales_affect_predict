@@ -5,7 +5,7 @@
     <title>Schloss Lab Experiment</title>
     <!-- Load in the jspsych tools, plugins,and layout -->
     <script src="jsPsych/jspsych.js"></script>
-
+    
     <script src="jsPsych/jspsych-image-slider-response_InstrMAS.js"></script>
     <script src="jsPsych/plugin-image-slider-response.js"></script>
     <script src="jsPsych/plugin-html-slider-response.js"></script>
@@ -25,18 +25,18 @@
     <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
-
-
+    
+    
 </head>
 
 <body>
-
-
+    
+    
     <!--------------------- Here is where the experiment is created ------------------------------------------->
     <script>
-
-
-
+        
+        
+        
         // write a function to create a latin square of length 16
         function latinSquare(length) {
             var square = [];
@@ -48,23 +48,26 @@
             }
             return square;
         }
-
-
+        
+        
         async function createExperiment() {
-
+            
             var jsPsych = initJsPsych();
             var timeline = [];
             latinSquareArray = latinSquare(40);
-
+            
             const subject_id = jsPsych.randomization.randomID(10);
-
+            
+            // Extract SONA id from URL query parameter
+            const sona_id = jsPsych.data.getURLVariable('id') || 'N/A';
+            
             const filename = `${subject_id}.csv`;
             // Set of maps we've chosen
             // var map_ids = ['02', '05', '07', '10', '12', '13', '15', '23', '26', '27'];
-
-            const condition_num = await jsPsychPipe.getCondition("SpUvGsbmky2a");
-                // const condition_num = 0; // for testing purposes, assign everyone to condition 0    
-
+            
+            const condition_num = await jsPsychPipe.getCondition("1DNtMtshsGNB");
+            // const condition_num = 0; // for testing purposes, assign everyone to condition 0    
+            
             /// map condition_num such that they get mapped to one of the following conditions. 3, 4, 11, 12, 18, 21, 32, 37, 40, 42, 50, 54, 57, 63, 65, 66, 69, 71, 76, 77
             /// since there are 18 conditions total, we can do this by taking mod 20 of the condition number obtained from jspsych pipe
             // const condition_map = [4, 42];
@@ -73,101 +76,102 @@
             console.log("Mapped condition number: ", mapped_condition_num);
             // const color_scale_assignment = latinSquareArray[condition_num];
             const color_scale_assignment = latinSquareArray[mapped_condition_num];
-
-
+            
+            
             var ip = Object.values(map_ids);
             const shift_conditions = ['lightshift', 'darkshift'];
-        
+            
             var image_paths = [];
             for (var i = 0; i < color_scales.length; i++) {
-                 
+                
                 assignment_index = color_scale_assignment[i];
                 map_index = ip[assignment_index].split('_')[0];
                 rotation_index = ip[assignment_index].split('_')[1];
                 map_name = color_scales[i];
                 for (var shift_index = 0; shift_index < shift_conditions.length; shift_index++) {
-
-                 image_paths.push('images/shifted_maps/map' + map_index + "_"+ map_name +"_"+ "orientDef" + "_" + rotation_index + "_" + shift_conditions[shift_index] + '.png');
+                    
+                    image_paths.push('images/shifted_maps/map' + map_index + "_"+ map_name +"_"+ "orientDef" + "_" + rotation_index + "_" + shift_conditions[shift_index] + '.png');
                 }
-
+                
             }
-
-
+            
+            
             // Set background color to gray //
             document.body.style.backgroundColor = "rgb(128,128,128)"
-
-
-
-        // Group image paths by color scale
-        var color_scale_groups = {};
-
-        for (var k = 0; k < image_paths.length; k++) {
-            var path = image_paths[k];
-    
-            var parts = path.split('_');
-            var color_scale = parts[2];
-            var color_scale_w_shift = color_scale + '_' + parts.slice(-1)[0].split('.')[0]; // add shift code to the color scale name to create a unique identifier for each color scale with shift level combination
-        
             
-            if (!color_scale_groups[color_scale_w_shift]) {
-                color_scale_groups[color_scale_w_shift] = [];
+            
+            
+            // Group image paths by color scale
+            var color_scale_groups = {};
+            
+            for (var k = 0; k < image_paths.length; k++) {
+                var path = image_paths[k];
+                
+                var parts = path.split('_');
+                var color_scale = parts[2];
+                var color_scale_w_shift = color_scale + '_' + parts.slice(-1)[0].split('.')[0]; // add shift code to the color scale name to create a unique identifier for each color scale with shift level combination
+                
+                
+                if (!color_scale_groups[color_scale_w_shift]) {
+                    color_scale_groups[color_scale_w_shift] = [];
+                }
+                color_scale_groups[color_scale_w_shift].push(path);
             }
-            color_scale_groups[color_scale_w_shift].push(path);
-        }
-
-        console.log("Color scale groups:", color_scale_groups);
-
-        // Select one random item from each color scale group
-        var selected_image_paths = [];
-        for (var scale in color_scale_groups) {
-            var paths = color_scale_groups[scale];
-            var random_index = Math.floor(Math.random() * paths.length);
-            selected_image_paths.push(paths[random_index]);
-        }
-
-        console.log("Selected image paths:", selected_image_paths);
-
-
-
-           
+            
+            console.log("Color scale groups:", color_scale_groups);
+            
+            // Select one random item from each color scale group
+            var selected_image_paths = [];
+            for (var scale in color_scale_groups) {
+                var paths = color_scale_groups[scale];
+                var random_index = Math.floor(Math.random() * paths.length);
+                selected_image_paths.push(paths[random_index]);
+            }
+            
+            console.log("Selected image paths:", selected_image_paths);
+            
+            
+            
+            
             // Build ishihara image paths for preloading
             var ishihara_images = [];
             for (var p = 0; p <= 10; p++) {
                 ishihara_images.push('images/ishihara/ishihara-' + p + '.png');
             }
-
+            
             var preload = {
                 type: jsPsychPreload,
                 images: image_paths.concat(ishihara_images)
             };
             jsPsych.data.addProperties({
                 subject_id: subject_id,
-                condition_num: mapped_condition_num
+                condition_num: mapped_condition_num,
+                SONA_id: sona_id
             });
-
+            
             timeline.push(preload);
-
+            
             // Initial welcome screen
             var initial_screen = {
                 type: jsPsychHtmlButtonResponse,
                 stimulus: 'Welcome to our experiment!' +
-                    '<p>At the bottom of this screen, you will see a button that says "Begin Experiment".' +
+                '<p>At the bottom of this screen, you will see a button that says "Begin Experiment".' +
                     '<br>Please only click that button when you are ready to complete the 30 minute experiment in one sitting.</p>' +
                     '<p> Once you click that button, it will not be possible to restart the experiment.',
-                choices: ['Begin Experiment']
-            }
-            timeline.push(initial_screen);
-
-            timeline.push({
-                type: jsPsychFullscreen,
-                fullscreen_mode: true,
-            })
-
-            var consentSign = {
-                type: jsPsychSurveyMultiSelect,
-                questions: [
-                    {
-                        prompt:
+                        choices: ['Begin Experiment']
+                    }
+                    timeline.push(initial_screen);
+                    
+                    timeline.push({
+                        type: jsPsychFullscreen,
+                        fullscreen_mode: true,
+                    })
+                    
+                    var consentSign = {
+                        type: jsPsychSurveyMultiSelect,
+                        questions: [
+                        {
+                            prompt:
                             "  <strong>UNIVERSITY OF WISCONSIN-MADISON</strong>" +
                             "  <br><strong>Research Participant Information and Consent Form</strong>" +
                             " <br><br><strong>Title of the Study:</strong> Investigating how observers perceive, interpret, and evaluate visual features in 2D scenes and 3D environments" +
@@ -198,47 +202,47 @@
                             "  <br><br>By clicking the box below, you confirm that you have read this consent form, had an opportunity to ask any questions about your participation in this research and voluntarily consent to participate. You may print a copy of this form for your records." +
                             "  <br><br>Please click the box below next to the text 'I consent' to give your informed consent to participate. " +
                             "   </p>",
-                        options: ["<strong>I consent</strong>"],
-                        horizontal: false,
-                        required: true,
-                        name: 'Consent'
-                    },
-                ],
-                button_label: "Start Experiment",
-            };
-
-            timeline.push(consentSign);
-
-            // Overview instructions of experiment
-            var overview_instructions = {
-                type: jsPsychHtmlButtonResponse,
-                stimulus: 'Welcome! <p> This experiment involves two parts: demographic information, followed by the experimental task.' +
-                    '<p> It will take about 30 minutes to complete both parts.',
-                choices: ['Continue']
-            }
-            timeline.push(overview_instructions);
-
-            var age_lang_demo = {
-                type: jsPsychSurveyText,
-                questions: [
-                    { prompt: "Age", name: 'Age', rows: "1", columns: "3", required: true, },
-                    { prompt: "Gender", name: 'Gender', rows: "1", columns: "15", required: true, },
-                    { prompt: "Race/ethnicity", name: 'Race/ethnicity', rows: "1", columns: "30", required: true, },
-                    { prompt: "List all languages you know", name: "Languages", rows: "6", columns: "60", required: true, }
-                ],
-                preamble: "Please answer the following questions.",
-                button_label: "Done",
-                randomize_question_order: false
-            }
-            timeline.push(age_lang_demo);
-            
-            anchoring_grid = jsPsych.randomization.shuffle(selected_image_paths);
-            affect_list = jsPsych.randomization.shuffle(affect_list);
-
-
-            var instructions = {
-                type: jsPsychHtmlSliderResponse,
-                stimulus: `<div style='text-align:left; font-size:20px; line-height:25px; width: 1000px;'>
+                            options: ["<strong>I consent</strong>"],
+                            horizontal: false,
+                            required: true,
+                            name: 'Consent'
+                        },
+                        ],
+                        button_label: "Start Experiment",
+                    };
+                    
+                    timeline.push(consentSign);
+                    
+                    // Overview instructions of experiment
+                    var overview_instructions = {
+                        type: jsPsychHtmlButtonResponse,
+                        stimulus: 'Welcome! <p> This experiment involves two parts: demographic information, followed by the experimental task.' +
+                            '<p> It will take about 30 minutes to complete both parts.',
+                                choices: ['Continue']
+                            }
+                            timeline.push(overview_instructions);
+                            
+                            var age_lang_demo = {
+                                type: jsPsychSurveyText,
+                                questions: [
+                                { prompt: "Age", name: 'Age', rows: "1", columns: "3", required: true, },
+                                { prompt: "Gender", name: 'Gender', rows: "1", columns: "15", required: true, },
+                                { prompt: "Race/ethnicity", name: 'Race/ethnicity', rows: "1", columns: "30", required: true, },
+                                { prompt: "List all languages you know", name: "Languages", rows: "6", columns: "60", required: true, }
+                                ],
+                                preamble: "Please answer the following questions.",
+                                button_label: "Done",
+                                randomize_question_order: false
+                            }
+                            timeline.push(age_lang_demo);
+                            
+                            anchoring_grid = jsPsych.randomization.shuffle(selected_image_paths);
+                            affect_list = jsPsych.randomization.shuffle(affect_list);
+                            
+                            
+                            var instructions = {
+                                type: jsPsychHtmlSliderResponse,
+                                stimulus: `<div style='text-align:left; font-size:20px; line-height:25px; width: 1000px;'>
                                 During this experiment you will be asked to rate how much you associate maps with\
                     different concepts.<br> Below, you can see some examples of the maps you will be asked to rate. Above the maps
                     is the list of concepts.<br>You will be asked\
@@ -278,10 +282,10 @@
                    <div style="display: flex; justify-content: center; padding-top: 15px;">
                     <div style="display: grid; grid-template-columns: repeat(10, 55px); grid-gap: 5px; width: auto;">
                         ${[...Array(4)].map((_, row) =>
-                    [...Array(10)].map((_, col) =>
-                        `<img src="${anchoring_grid[row * 10 + col]}" alt="map" style="width: 100%;">`
-                    ).join('')
-                ).join('')}
+                                    [...Array(10)].map((_, col) =>
+                                    `<img src="${anchoring_grid[row * 10 + col]}" alt="map" style="width: 100%;">`
+                                    ).join('')
+                                    ).join('')}
                     </div>
                 </div>
 
@@ -289,403 +293,403 @@
                     <div style="clear: both;"></div>
                 </div>
                             `,
-                labels: ['Not at all', 'Very Much'],
-                require_movement: false,
-                step: 1,
-                slider_start: 0,
-                min: -200,
-                max: 200,
-                response_ends_trial: false,
-                include_button: true,
-                data: {
-                    //change this img
-                    // image_path: 'maps_anchoring.png',
-                    practiceTrial: true,
-                },
-                slider_width: 500
-
-            }
-
-
-            //instructions on how the slider may be moved
-            timeline.push(instructions);
-            var slider_instructions = {
-                type: jsPsychHtmlButtonResponse,
-                stimulus: `<div style="width:800px;"><p style="text-align:left">To move the slider, click and drag your cursor to the location of the scale where you would like to make your rating and then let go. When you let go of the slider, your response will be recorded and the next trial will begin. <br>
+                                    labels: ['Not at all', 'Very Much'],
+                                    require_movement: false,
+                                    step: 1,
+                                    slider_start: 0,
+                                    min: -200,
+                                    max: 200,
+                                    response_ends_trial: false,
+                                    include_button: true,
+                                    data: {
+                                        //change this img
+                                        // image_path: 'maps_anchoring.png',
+                                        practiceTrial: true,
+                                    },
+                                    slider_width: 500
+                                    
+                                }
+                                
+                                
+                                //instructions on how the slider may be moved
+                                timeline.push(instructions);
+                                var slider_instructions = {
+                                    type: jsPsychHtmlButtonResponse,
+                                    stimulus: `<div style="width:800px;"><p style="text-align:left">To move the slider, click and drag your cursor to the location of the scale where you would like to make your rating and then let go. When you let go of the slider, your response will be recorded and the next trial will begin. <br>
                     We are interested in your initial impressions of each map for the given concept, so please go with your first intuition. <br>
                     Before you begin the experiment, there will be four training trials for you to practice using the scale. <br>
                      When you are ready to start the training trials, please click "Continue".</p><br></div>`,
-                choices: ['Continue']
-            }
-
-
-            timeline.push(slider_instructions);
-         
-    
-            for (i = 0; i < 4; i++) {
-                let practice_concept = affect_list[0];
-                let task
-                if (i == 0) {
-                    task = "Please move the slider all the way to the <br> right endpoint of the scale"
-                }
-                else if (i == 1) {
-                    task = "Please move the slider all the way to the <br> left endpoint of the scale"
-                }
-                else if (i == 2) {
-                    task = "Please move the slider halfway between the center and right endpoint of the scale"
-                }
-                else if (i == 3) {
-                    task = "Please move the slider halfway between the center and left endpoint of the scale"
-                }
-                var rating_trial = {
-                    type: jsPsychHtmlSliderResponse,
-                    stimulus: `<div style="width:500px;">
+                                        choices: ['Continue']
+                                    }
+                                    
+                                    
+                                    timeline.push(slider_instructions);
+                                    
+                                    
+                                    for (i = 0; i < 4; i++) {
+                                        let practice_concept = affect_list[0];
+                                        let task
+                                        if (i == 0) {
+                                            task = "Please move the slider all the way to the <br> right endpoint of the scale"
+                                        }
+                                        else if (i == 1) {
+                                            task = "Please move the slider all the way to the <br> left endpoint of the scale"
+                                        }
+                                        else if (i == 2) {
+                                            task = "Please move the slider halfway between the center and right endpoint of the scale"
+                                        }
+                                        else if (i == 3) {
+                                            task = "Please move the slider halfway between the center and left endpoint of the scale"
+                                        }
+                                        var rating_trial = {
+                                            type: jsPsychHtmlSliderResponse,
+                                            stimulus: `<div style="width:500px;">
                                     <p style="font-size:25px;">${task}</p>
 
                                     </div>
                                 </div>`,
-                    labels: ['Not at all', 'Very Much'],
-                    // slider_width: 500,
-                    require_movement: false,
-                    step: 1,
-                    slider_start: 0,
-                    min: -200,
-                    max: 200,
-                    response_ends_trial: true,
-                    post_trial_gap: 500,
-                    data: {
-                        //  image_path: maps[i],
-                        //  concept: practice_concept,
-                        practiceTrial: true,
-                        practiceTrialNum: i
-                    },
-                    on_finish: function (data) {
-                        var slider_response = data.response;
-                        var trialNum = data.practiceTrialNum;
-                        let upperLimit;
-                        let lowerLimit;
-                        if (trialNum == 0) {
-                            upperLimit = 220;
-                            lowerLimit = 180;
-                        }
-                        else if (trialNum == 1) {
-                            upperLimit = -180;
-                            lowerLimit = -220;
-                        }
-                        else if (trialNum == 2) {
-                            upperLimit = 110;
-                            lowerLimit = 80;
-                        }
-                        else if (trialNum == 3) {
-                            upperLimit = -80;
-                            lowerLimit = -110;
-                        }
-             
-                        if (slider_response <= upperLimit && slider_response >= lowerLimit) {
-                            data.correct = true;
-                        }
-                        else {
-                            data.correct = false;
-                        }
-                    }
-
-                };
-
-
-                var rating_feedback = {
-                    type: jsPsychHtmlButtonResponse,
-                    stimulus: function () {
-                        var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct;
-                        if (last_resp_correct) {
-                            return "<p align='center'><b>Good job!</b> Click on 'Continue' to proceed.</p>"
-                        } else {
-                            return "<p align='center'><b>Not quite!</b> The slider was not placed near the instructed located. Click on 'Continue' to try again. </p>"
-                        }
-                    },
-                    choices: ['Continue']
-                };
-
-                var comp1_loop = {
-                    timeline: [rating_trial, rating_feedback],
-                    loop_function: function (data) {
-                  
-                        if (data.values()[0].correct == true) {
-                            return false;
-                        } else {
-                            return true;
-                        }
-                    }
-                };
-                timeline.push(comp1_loop);
-            }
-
-            var practice_complete = {
-                type: jsPsychHtmlButtonResponse,
-                stimulus: "<p>Great job! You've completed the practice trials. Now you will begin the main task.</p>",
-                choices: ['Continue']
-            };
-            timeline.push(practice_complete);
-
-
-
-            for (i = 0; i < affect_list.length; i++) {
-
-                var color_order = jsPsych.randomization.sampleWithoutReplacement(_.range(Object.keys(image_paths).length), Object.keys(image_paths).length);
-
-                var block_break0 = {
-                    type: jsPsychHtmlButtonResponse,
-                    stimulus: "<p>In this block of trials, you will be asked to rate how much you associate each map with:</p > " +
-                        "<p style = 'font-size:150%; font-weight: bold'>" + affect_list[i] + "</p><br></br>",
-                    choices: ['Continue'],
-                };
-                timeline.push(block_break0);
-                trial_block = [];
-
-     
-                for (j = 0; j < Object.keys(image_paths).length; j++) {
-                    for (repetition = 1; repetition < 2; repetition++) {
-
-                        let img = image_paths[j];
-            
-
-                        this_map = image_paths[color_order[j]];
-
-                        if (!im2cond_dict[this_map]) {
-                            console.error("Missing in im2cond_dict:", this_map);
-                        }
-                   
-                        // Define concept based on current exemplar
-                        var concept = affect_list[i];
-                        var rating_trial = {
-                            type: jsPsychHtmlSliderResponse,
-                            stimulus: `<div style="width:500px;">
+                                                labels: ['Not at all', 'Very Much'],
+                                                // slider_width: 500,
+                                                require_movement: false,
+                                                step: 1,
+                                                slider_start: 0,
+                                                min: -200,
+                                                max: 200,
+                                                response_ends_trial: true,
+                                                post_trial_gap: 500,
+                                                data: {
+                                                    //  image_path: maps[i],
+                                                    //  concept: practice_concept,
+                                                    practiceTrial: true,
+                                                    practiceTrialNum: i
+                                                },
+                                                on_finish: function (data) {
+                                                    var slider_response = data.response;
+                                                    var trialNum = data.practiceTrialNum;
+                                                    let upperLimit;
+                                                    let lowerLimit;
+                                                    if (trialNum == 0) {
+                                                        upperLimit = 220;
+                                                        lowerLimit = 180;
+                                                    }
+                                                    else if (trialNum == 1) {
+                                                        upperLimit = -180;
+                                                        lowerLimit = -220;
+                                                    }
+                                                    else if (trialNum == 2) {
+                                                        upperLimit = 110;
+                                                        lowerLimit = 80;
+                                                    }
+                                                    else if (trialNum == 3) {
+                                                        upperLimit = -80;
+                                                        lowerLimit = -110;
+                                                    }
+                                                    
+                                                    if (slider_response <= upperLimit && slider_response >= lowerLimit) {
+                                                        data.correct = true;
+                                                    }
+                                                    else {
+                                                        data.correct = false;
+                                                    }
+                                                }
+                                                
+                                            };
+                                            
+                                            
+                                            var rating_feedback = {
+                                                type: jsPsychHtmlButtonResponse,
+                                                stimulus: function () {
+                                                    var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct;
+                                                    if (last_resp_correct) {
+                                                        return "<p align='center'><b>Good job!</b> Click on 'Continue' to proceed.</p>"
+                                                    } else {
+                                                        return "<p align='center'><b>Not quite!</b> The slider was not placed near the instructed located. Click on 'Continue' to try again. </p>"
+                                                    }
+                                                },
+                                                choices: ['Continue']
+                                            };
+                                            
+                                            var comp1_loop = {
+                                                timeline: [rating_trial, rating_feedback],
+                                                loop_function: function (data) {
+                                                    
+                                                    if (data.values()[0].correct == true) {
+                                                        return false;
+                                                    } else {
+                                                        return true;
+                                                    }
+                                                }
+                                            };
+                                            timeline.push(comp1_loop);
+                                        }
+                                        
+                                        var practice_complete = {
+                                            type: jsPsychHtmlButtonResponse,
+                                            stimulus: "<p>Great job! You've completed the practice trials. Now you will begin the main task.</p>",
+                                            choices: ['Continue']
+                                        };
+                                        timeline.push(practice_complete);
+                                        
+                                        
+                                        
+                                        for (i = 0; i < affect_list.length; i++) {
+                                            
+                                            var color_order = jsPsych.randomization.sampleWithoutReplacement(_.range(Object.keys(image_paths).length), Object.keys(image_paths).length);
+                                            
+                                            var block_break0 = {
+                                                type: jsPsychHtmlButtonResponse,
+                                                stimulus: "<p>In this block of trials, you will be asked to rate how much you associate each map with:</p > " +
+                                                    "<p style = 'font-size:150%; font-weight: bold'>" + affect_list[i] + "</p><br></br>",
+                                                    choices: ['Continue'],
+                                                };
+                                                timeline.push(block_break0);
+                                                trial_block = [];
+                                                
+                                                
+                                                for (j = 0; j < Object.keys(image_paths).length; j++) {
+                                                    for (repetition = 1; repetition < 2; repetition++) {
+                                                        
+                                                        let img = image_paths[j];
+                                                        
+                                                        
+                                                        this_map = image_paths[color_order[j]];
+                                                        
+                                                        if (!im2cond_dict[this_map]) {
+                                                            console.error("Missing in im2cond_dict:", this_map);
+                                                        }
+                                                        
+                                                        // Define concept based on current exemplar
+                                                        var concept = affect_list[i];
+                                                        var rating_trial = {
+                                                            type: jsPsychHtmlSliderResponse,
+                                                            stimulus: `<div style="width:500px;">
                             <p style="font-size:50px; font-weight:bold;"
                             >${concept}</p>
                             <div style="width:240px; margin: auto;">
                                 <img src="${this_map}" style= "width:200px"alt="img">
                             </div>
                         </div>`,
-                            labels: ['Not at all', 'Very Much'],
-                            slider_width: 500,
-                            require_movement: false,
-                            step: 1,
-                            slider_start: 0,
-                            min: -200,
-                            max: 200,
-                            response_ends_trial: true,
-                            post_trial_gap: 500,
-                            data: {
-                                image_path: this_map,
-                                concept: concept,
-                                repetition: repetition,
-                                map_id: this_map.match(/map(\d{2})/)[1], //extracts the map id from the image path
-                                //change these 3 (were hue, lightness, saturation)
-                                map_num: im2cond_dict[this_map]['map_num'],
-                                scale_name: im2cond_dict[this_map]['scale_name'],
-                                orientation_code: im2cond_dict[this_map]['orientation_code'],
-                                mapping_code: im2cond_dict[this_map]['mapping_code'],
-                                rotation_code: im2cond_dict[this_map]['rotate_code'],
-                                shift_code: im2cond_dict[this_map]['shift_code'],
-                            }
-
-                        };
-                        trial_block.push(rating_trial);
-                    }
-
-
-
-                }
-                trial_block = jsPsych.randomization.shuffle(trial_block);
-
-                /// insert a break halfway through the block
-                var halfway_index = Math.floor(trial_block.length / 2);
-                var break_trial = {
-                    type: jsPsychHtmlButtonResponse,
-                    stimulus: "<p>You are doing great!<br></br> You are halway done with the current block. When you are ready to continue, click the 'Continue' button.</p>",
-                    choices: ['Continue'],
-                };
-                trial_block.splice(halfway_index, 0, break_trial);
-                timeline = _.concat(timeline, trial_block);
-
-
-                if (i == affect_list.length - 1) {
-                    var block_break = {
-                        type: jsPsychHtmlButtonResponse,
-                        stimulus: "<p>Great Job! You are done rating all concepts!<br></br></p>",
-                        choices: ['Next'],
-                    };
-                    timeline.push(block_break)
-
-                } else if (i < affect_list.length) {
-                    var block_break = {
-                        type: jsPsychHtmlButtonResponse,
-                        stimulus: "<p>Great Job! You've finished block " + (i + 1) + ".<br></br> You have " + (affect_list.length - (i + 1)) + " block(s) left to go.<br></br></p>",
-                        choices: ['Next'],
-                    };
-                    timeline.push(block_break)
-                }
-
-            }
-
-
-            // Ishihara color vision check //
-            var ishihara_instructions = {
-                type: jsPsychHtmlKeyboardResponse,
-                stimulus:
-                    "<p>Good job! You have finished the task. Next, you will see an image on the screen." +
-                    "<br>If you see a number in the image, please carefully type that number in the box.</p>" +
-                    "<p>If you do not see a number in the image, please type 'None' in the box." +
-                    "<br>This part of the experiment will take about 2 minutes.</p>" +
-                    "<p>Please press the left or right arrow keys to begin.</p>",
-                post_trial_gap: 500,
-                choices: ["ArrowLeft", "ArrowRight"]
-            };
-            timeline.push(ishihara_instructions);
-
-
-            //random function
-            function getRandomIntInclusive(min, max) {
-                min = Math.ceil(min);
-                max = Math.floor(max);
-                return Math.floor(Math.random() * (max - min + 1));
-            }
-
-
-            //Loop to present 11 ishihara plates of a unique type
-            var plateCounter = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            var numPlates = 11;
-            for (plateNum = 0; plateNum < numPlates;) {
-
-
-                //Randomly select which plate to present
-                var whichPlate = getRandomIntInclusive(0, 10);
-
-                //always present this plate first
-                if (plateNum == 0) {
-                    whichPlate = 0;
-                    answer = "12";
-                }
-
-                // specify correct answer
-                if (whichPlate == 1) {
-                    answer = "8";
-                } else if (whichPlate == 2) {
-                    answer = "5";
-                } else if (whichPlate == 3) {
-                    answer = "29";
-                } else if (whichPlate == 4) {
-                    answer = "74";
-                } else if (whichPlate == 5) {
-                    answer = "7";
-                } else if (whichPlate == 6) {
-                    answer = "45";
-                } else if (whichPlate == 7) {
-                    answer = "2";
-                } else if (whichPlate == 8) {
-                    answer = "16";
-                } else if (whichPlate == 9) {
-                    answer = "35";
-                } else if (whichPlate == 10) {
-                    answer = "96";
-                }
-
-                //Check to ensure this plate not previously presented
-                if (plateCounter[whichPlate] == 0) {
-
-                    //Present trial
-                    var ishihara_plate = {
-                        type: jsPsychSurveyHtmlForm,
-                        preamble: '<div><p style="font-size:25px">Carefully type what number you see using digits (e.g., if you see 100, type "100" not "one hundred").<br>If you do not see a number, type "None".\
+                                                                labels: ['Not at all', 'Very Much'],
+                                                                slider_width: 500,
+                                                                require_movement: false,
+                                                                step: 1,
+                                                                slider_start: 0,
+                                                                min: -200,
+                                                                max: 200,
+                                                                response_ends_trial: true,
+                                                                post_trial_gap: 500,
+                                                                data: {
+                                                                    image_path: this_map,
+                                                                    concept: concept,
+                                                                    repetition: repetition,
+                                                                    map_id: this_map.match(/map(\d{2})/)[1], //extracts the map id from the image path
+                                                                    //change these 3 (were hue, lightness, saturation)
+                                                                    map_num: im2cond_dict[this_map]['map_num'],
+                                                                    scale_name: im2cond_dict[this_map]['scale_name'],
+                                                                    orientation_code: im2cond_dict[this_map]['orientation_code'],
+                                                                    mapping_code: im2cond_dict[this_map]['mapping_code'],
+                                                                    rotation_code: im2cond_dict[this_map]['rotate_code'],
+                                                                    shift_code: im2cond_dict[this_map]['shift_code'],
+                                                                }
+                                                                
+                                                            };
+                                                            trial_block.push(rating_trial);
+                                                        }
+                                                        
+                                                        
+                                                        
+                                                    }
+                                                    trial_block = jsPsych.randomization.shuffle(trial_block);
+                                                    
+                                                    /// insert a break halfway through the block
+                                                    var halfway_index = Math.floor(trial_block.length / 2);
+                                                    var break_trial = {
+                                                        type: jsPsychHtmlButtonResponse,
+                                                        stimulus: "<p>You are doing great!<br></br> You are halway done with the current block. When you are ready to continue, click the 'Continue' button.</p>",
+                                                        choices: ['Continue'],
+                                                    };
+                                                    trial_block.splice(halfway_index, 0, break_trial);
+                                                    timeline = _.concat(timeline, trial_block);
+                                                    
+                                                    
+                                                    if (i == affect_list.length - 1) {
+                                                        var block_break = {
+                                                            type: jsPsychHtmlButtonResponse,
+                                                            stimulus: "<p>Great Job! You are done rating all concepts!<br></br></p>",
+                                                            choices: ['Next'],
+                                                        };
+                                                        timeline.push(block_break)
+                                                        
+                                                    } else if (i < affect_list.length) {
+                                                        var block_break = {
+                                                            type: jsPsychHtmlButtonResponse,
+                                                            stimulus: "<p>Great Job! You've finished block " + (i + 1) + ".<br></br> You have " + (affect_list.length - (i + 1)) + " block(s) left to go.<br></br></p>",
+                                                            choices: ['Next'],
+                                                        };
+                                                        timeline.push(block_break)
+                                                    }
+                                                    
+                                                }
+                                                
+                                                
+                                                // Ishihara color vision check //
+                                                var ishihara_instructions = {
+                                                    type: jsPsychHtmlKeyboardResponse,
+                                                    stimulus:
+                                                    "<p>Good job! You have finished the task. Next, you will see an image on the screen." +
+                                                        "<br>If you see a number in the image, please carefully type that number in the box.</p>" +
+                                                        "<p>If you do not see a number in the image, please type 'None' in the box." +
+                                                            "<br>This part of the experiment will take about 2 minutes.</p>" +
+                                                            "<p>Please press the left or right arrow keys to begin.</p>",
+                                                            post_trial_gap: 500,
+                                                            choices: ["ArrowLeft", "ArrowRight"]
+                                                        };
+                                                        timeline.push(ishihara_instructions);
+                                                        
+                                                        
+                                                        //random function
+                                                        function getRandomIntInclusive(min, max) {
+                                                            min = Math.ceil(min);
+                                                            max = Math.floor(max);
+                                                            return Math.floor(Math.random() * (max - min + 1));
+                                                        }
+                                                        
+                                                        
+                                                        //Loop to present 11 ishihara plates of a unique type
+                                                        var plateCounter = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                                                        var numPlates = 11;
+                                                        for (plateNum = 0; plateNum < numPlates;) {
+                                                            
+                                                            
+                                                            //Randomly select which plate to present
+                                                            var whichPlate = getRandomIntInclusive(0, 10);
+                                                            
+                                                            //always present this plate first
+                                                            if (plateNum == 0) {
+                                                                whichPlate = 0;
+                                                                answer = "12";
+                                                            }
+                                                            
+                                                            // specify correct answer
+                                                            if (whichPlate == 1) {
+                                                                answer = "8";
+                                                            } else if (whichPlate == 2) {
+                                                                answer = "5";
+                                                            } else if (whichPlate == 3) {
+                                                                answer = "29";
+                                                            } else if (whichPlate == 4) {
+                                                                answer = "74";
+                                                            } else if (whichPlate == 5) {
+                                                                answer = "7";
+                                                            } else if (whichPlate == 6) {
+                                                                answer = "45";
+                                                            } else if (whichPlate == 7) {
+                                                                answer = "2";
+                                                            } else if (whichPlate == 8) {
+                                                                answer = "16";
+                                                            } else if (whichPlate == 9) {
+                                                                answer = "35";
+                                                            } else if (whichPlate == 10) {
+                                                                answer = "96";
+                                                            }
+                                                            
+                                                            //Check to ensure this plate not previously presented
+                                                            if (plateCounter[whichPlate] == 0) {
+                                                                
+                                                                //Present trial
+                                                                var ishihara_plate = {
+                                                                    type: jsPsychSurveyHtmlForm,
+                                                                    preamble: '<div><p style="font-size:25px">Carefully type what number you see using digits (e.g., if you see 100, type "100" not "one hundred").<br>If you do not see a number, type "None".\
                             <br></p></div><div ><img src="images/ishihara/ishihara-' + whichPlate + '.png" alt="Ishihara Plate" style="height:500px"></div>',
-                        html: '<div><p><input name="number" type="text" required /></div>',
-                        // trial_duration: 5000,
-                        post_trial_gap: 250,
-                        data: { ishihara_plate: whichPlate, correct_response: answer },
-                        on_load: function () {
-                            var input = document.querySelector('input[name="number"]');
-                            if (input) input.focus();
-                        }
-                    };
-                    timeline.push(ishihara_plate)
-                    plateCounter[whichPlate] = 1;
-                    plateNum++
-                }
-            }
-
-            /// display the data on screen
-            console.log(jsPsych.data.get());
-            // Color Vision check //
-            var colorvision = {
-                type: jsPsychSurveyMultiChoice,
-                questions: [
-                    {
-                        prompt: "Do you have difficulty seeing colors or noticing differences<br>between colors compared to the average person?",
-                        options: ["Yes", "No"],
-                        horizontal: false,
-                        required: true,
-                        name: 'colorDifficulty'
-                    },
-
-                    {
-                        prompt: "Do you consider yourself to be colorblind? ",
-                        options: ["Yes", "No"],
-                        horizontal: false,
-                        required: true,
-                        name: 'colorBlind'
-                    },
-
-                    {
-                        prompt: "What device did you use to complete this experiment?",
-                        options: ["Computer", "Tablet", "Phone", "Other"],
-                        horizontal: false,
-                        required: true,
-                        name: 'device'
-                    }
-                ],
-                preamble: "",
-                button_label: "Done",
-                randomize_question_order: false
-            };
-            timeline.push(colorvision);
-
-
-            const save_data = {
-                type: jsPsychPipe,
-                action: "save",
-                experiment_id: "SpUvGsbmky2a",
-                filename: filename,
-                data_string: () => jsPsych.data.get().csv()
-            };
-            timeline.push(save_data);
-
-            //spot for debrief
-
-            var debrief_script = {
-                type: jsPsychHtmlKeyboardResponse,
-                stimulus: '<div style="width:800px">Great job! You have finished the experiment.' +
-                    '<p> The goal of this experiment is to determine what factors influence the associations between emotions and maps. <br>' +
-                    '<p> Others who participate in this study may have been shown different maps than the ones you did.\
+                                                                        html: '<div><p><input name="number" type="text" required /></div>',
+                                                                            // trial_duration: 5000,
+                                                                            post_trial_gap: 250,
+                                                                            data: { ishihara_plate: whichPlate, correct_response: answer },
+                                                                            on_load: function () {
+                                                                                var input = document.querySelector('input[name="number"]');
+                                                                                if (input) input.focus();
+                                                                            }
+                                                                        };
+                                                                        timeline.push(ishihara_plate)
+                                                                        plateCounter[whichPlate] = 1;
+                                                                        plateNum++
+                                                                    }
+                                                                }
+                                                                
+                                                                /// display the data on screen
+                                                                console.log(jsPsych.data.get());
+                                                                // Color Vision check //
+                                                                var colorvision = {
+                                                                    type: jsPsychSurveyMultiChoice,
+                                                                    questions: [
+                                                                    {
+                                                                        prompt: "Do you have difficulty seeing colors or noticing differences<br>between colors compared to the average person?",
+                                                                        options: ["Yes", "No"],
+                                                                        horizontal: false,
+                                                                        required: true,
+                                                                        name: 'colorDifficulty'
+                                                                    },
+                                                                    
+                                                                    {
+                                                                        prompt: "Do you consider yourself to be colorblind? ",
+                                                                        options: ["Yes", "No"],
+                                                                        horizontal: false,
+                                                                        required: true,
+                                                                        name: 'colorBlind'
+                                                                    },
+                                                                    
+                                                                    {
+                                                                        prompt: "What device did you use to complete this experiment?",
+                                                                        options: ["Computer", "Tablet", "Phone", "Other"],
+                                                                        horizontal: false,
+                                                                        required: true,
+                                                                        name: 'device'
+                                                                    }
+                                                                    ],
+                                                                    preamble: "",
+                                                                    button_label: "Done",
+                                                                    randomize_question_order: false
+                                                                };
+                                                                timeline.push(colorvision);
+                                                                
+                                                                
+                                                                const save_data = {
+                                                                    type: jsPsychPipe,
+                                                                    action: "save",
+                                                                    experiment_id: "1DNtMtshsGNB",
+                                                                    filename: filename,
+                                                                    data_string: () => jsPsych.data.get().csv()
+                                                                };
+                                                                timeline.push(save_data);
+                                                                
+                                                                //spot for debrief
+                                                                
+                                                                var debrief_script = {
+                                                                    type: jsPsychHtmlKeyboardResponse,
+                                                                    stimulus: '<div style="width:800px">Great job! You have finished the experiment.' +
+                                                                        '<p> The goal of this experiment is to determine what factors influence the associations between emotions and maps. <br>' +
+                                                                            '<p> Others who participate in this study may have been shown different maps than the ones you did.\
                         Please do not inform other potential participants of the hypotheses in our experiment' +
-                    '<p> Credit for your participation will be appear on SONA in the next few days.' +
-                    '<p> Thank you for participating! You may now close this window.</p></div>',
-                choices: ['NO_KEYS']
-            }
-
-            timeline.push(debrief_script);
-
-            timeline.push({
-                type: jsPsychFullscreen,
-                fullscreen_mode: false,
-            })
-
-
-            jsPsych.run(timeline);
-        }
-
-        createExperiment();
-
-
-    </script>
-</body>
-
-</html> 
+                                                                                '<p> Credit for your participation will be appear on SONA in the next few days.' +
+                                                                                    '<p> Thank you for participating! You may now close this window.</p></div>',
+                                                                                    choices: ['NO_KEYS']
+                                                                                }
+                                                                                
+                                                                                timeline.push(debrief_script);
+                                                                                
+                                                                                timeline.push({
+                                                                                    type: jsPsychFullscreen,
+                                                                                    fullscreen_mode: false,
+                                                                                })
+                                                                                
+                                                                                
+                                                                                jsPsych.run(timeline);
+                                                                            }
+                                                                            
+                                                                            createExperiment();
+                                                                            
+                                                                            
+                                                                        </script>
+                                                                    </body>
+                                                                    
+                                                                    </html> 
