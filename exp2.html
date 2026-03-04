@@ -70,9 +70,9 @@
             
             /// map condition_num such that they get mapped to one of the following conditions. 3, 4, 11, 12, 18, 21, 32, 37, 40, 42, 50, 54, 57, 63, 65, 66, 69, 71, 76, 77
             /// since there are 18 conditions total, we can do this by taking mod 20 of the condition number obtained from jspsych pipe
-            // const condition_map = [4, 42];
-            // const mapped_condition_num = condition_map[condition_num % 2];
-            const mapped_condition_num = condition_num;
+            const condition_map = [1, 5, 6, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40];
+            const mapped_condition_num = condition_map[condition_num % 35];
+            // const mapped_condition_num = condition_num;
             console.log("Mapped condition number: ", mapped_condition_num);
             // const color_scale_assignment = latinSquareArray[condition_num];
             const color_scale_assignment = latinSquareArray[mapped_condition_num];
