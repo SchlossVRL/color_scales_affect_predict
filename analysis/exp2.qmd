@@ -97,11 +97,12 @@ subject_dist<-ratings_trials_exp %>%
   group_by(condition_num) %>% 
   summarize(num_participants = n_distinct(subject_id))
 
-
+subject_dist
 
 ### can you list all the numbers between 0 and 79 not present in subject_dist$condition_num
 missing_conditions <- setdiff(0:40, subject_dist$condition_num)
 print(paste0('missing conditions: ', paste(missing_conditions, collapse = ', ')))
+
 
 
 write.csv(ratings_trials_exp_grouped, '../data/exp2_ratings_trials_exp_grouped.csv')
@@ -113,4 +114,42 @@ write.csv(ratings_trials_exp_grouped, '../data/exp2_ratings_trials_exp_grouped.c
 ratings_trials_exp_grouped%>%ggplot(aes(x=scale_name, y=mean_rating, col=shift_code, group=shift_code))+
   geom_point()+ facet_grid(rows='concept')+geom_line()
 
+```
+
+```{r}
+library(ggimage)
+
+analysis_df$path_name <- paste0("../images/small/map02_", analysis_df$scale_name, "_scaleDef_orientDef_000_25px.png")
+# 2. Build the plot
+p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
+  geom_image(aes(image = path_name), size = 0.05) + 
+  geom_smooth(method = 'lm', se = FALSE, color = '#06c7bd') +
+  facet_wrap(~concept, nrow = 1) +
+  labs(x = 'Predicted Ratings', y = 'Human Ratings') +
+  theme_linedraw() +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  coord_fixed(ratio = 1) +
+  theme(
+    panel.spacing.y = unit(1, "lines"),
+    panel.spacing.x = unit(2, "lines"),
+    plot.margin = margin(10, 20, 10, 10, "pt"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+     strip.text = element_text(size = 12) 
+  )
+
+
+# 3. Save the result
+n_facets <- length(unique(analysis_df$concept))
+panel_size <- 3.5  # inches per panel
+ggsave(
+  paste0(plot_dir, 'exp_2_scatterplot_predicted_vs_observed_ratings.pdf'), 
+  plot = p, 
+  width = panel_size * n_facets + 1,  # +1 for margins/labels
+  height = panel_size + 1.5,           # +1.5 for axis labels/title
+  dpi = 300
+)
+
+p
 ```

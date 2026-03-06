@@ -134,7 +134,7 @@ subject_dist<-ratings_trials_exp %>%
   group_by(condition_num) %>% 
   summarize(num_participants = n_distinct(subject_id))
 
-
+subject_dist
 
 ### can you list all the numbers between 0 and 79 not present in subject_dist$condition_num
 missing_conditions <- setdiff(0:79, subject_dist$condition_num)
@@ -151,7 +151,7 @@ write.csv(ratings_trials_exp_grouped, '../data/exp1_ratings_trials_exp_grouped.c
 
 ```{r}
 
-predicted_ratings<- read.csv('../results/matplotlib_colorscales_w_predictions.csv')
+predicted_ratings<- read.csv('../results/matplotlib_colorscales_w_predictions_2.csv')
 
 ### assuming equal presence of each color
 predicted_ratings_grouped_uniform <- predicted_ratings %>% 
@@ -206,23 +206,41 @@ print(results)
 
 ```{r}
 ### make a faceted scatterplot of predicted vs. observed ratings for each emotion (e.g.,  analysis_df$mean_rating vs. analysis_df$mean_prediction))
+library(ggimage)
 
-p<- ggplot(analysis_df, aes(x=mean_prediction, y=mean_rating)) +
-  geom_point() +
-  geom_smooth(method='lm', se=FALSE, color='#06c7bd') +
-  facet_wrap(~concept) +
-  labs(x='Predicted Ratings', y='Human Ratings') +
-  theme_linedraw()+
-  scale_y_continuous(limits= c(0,1),expand = c(0, 0))+
-  scale_x_continuous(limits= c(0,1),expand = c(0, 0))+
-  theme(panel.spacing.y = unit(1, "lines"),
-        panel.spacing.x = unit(1.5, "lines"),
-        plot.margin = margin(10, 20, 10, 10, "pt") )
+analysis_df$path_name <- paste0("../images/small/map02_", analysis_df$scale_name, "_scaleDef_orientDef_000_25px.png")
+# 2. Build the plot
+p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
+  geom_image(aes(image = path_name), size = 0.05) + 
+  geom_smooth(method = 'lm', se = FALSE, color = '#06c7bd') +
+  facet_wrap(~concept, nrow = 1) +
+  labs(x = 'Predicted Ratings', y = 'Human Ratings') +
+  theme_linedraw() +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  coord_fixed(ratio = 1) +
+  theme(
+    panel.spacing.y = unit(1, "lines"),
+    panel.spacing.x = unit(2, "lines"),
+    plot.margin = margin(10, 20, 10, 10, "pt"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+     strip.text = element_text(size = 12) 
+  )
 
-ggsave(paste0(plot_dir,'exp_1_scatterplot_predicted_vs_observed_ratings.pdf'), plot = p, width = 8, height = 5, dpi = 300)
+
+# 3. Save the result
+n_facets <- length(unique(analysis_df$concept))
+panel_size <- 3.5  # inches per panel
+ggsave(
+  paste0(plot_dir, 'exp_1_scatterplot_predicted_vs_observed_ratings.pdf'), 
+  plot = p, 
+  width = panel_size * n_facets + 1,  # +1 for margins/labels
+  height = panel_size + 1.5,           # +1.5 for axis labels/title
+  dpi = 300
+)
 
 p
-
 ```
 
 ### Subsetting scales for future experiments (40 out of 80)
@@ -292,14 +310,6 @@ print(nrow(diverse_set))
 head(diverse_set)
 
 
-# diverse_set <- diverse_set %>%
-#   mutate(
-#     scale_name_R = if_else(
-#       mapping_code == "scaleRev", 
-#       paste0(scale_name, "_r"), 
-#       as.character(scale_name)
-#     )
-#   )
 ```
 
 ## Generating Shifted Maps
