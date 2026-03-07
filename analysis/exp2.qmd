@@ -119,10 +119,16 @@ ratings_trials_exp_grouped%>%ggplot(aes(x=scale_name, y=mean_rating, col=shift_c
 ```{r}
 library(ggimage)
 
+preds_per_color <- read.csv(paste0(results_dir, "matplotlib_colorscales_w_predictions_2.csv"),
+                             stringsAsFactors = FALSE)
+
+analysis_df <- ratings_trials_exp_grouped
+# %>%inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name"))
+
 analysis_df$path_name <- paste0("../images/small/map02_", analysis_df$scale_name, "_scaleDef_orientDef_000_25px.png")
 # 2. Build the plot
 p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
-  geom_image(aes(image = path_name), size = 0.05) + 
+  geom_image(aes(image = path_name), size = 0.05) +
   geom_smooth(method = 'lm', se = FALSE, color = '#06c7bd') +
   facet_wrap(~concept, nrow = 1) +
   labs(x = 'Predicted Ratings', y = 'Human Ratings') +
@@ -136,7 +142,7 @@ p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
     plot.margin = margin(10, 20, 10, 10, "pt"),
     axis.title = element_text(size = 12),
     axis.text = element_text(size = 12),
-     strip.text = element_text(size = 12) 
+     strip.text = element_text(size = 12)
   )
 
 
@@ -144,12 +150,217 @@ p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
 n_facets <- length(unique(analysis_df$concept))
 panel_size <- 3.5  # inches per panel
 ggsave(
-  paste0(plot_dir, 'exp_2_scatterplot_predicted_vs_observed_ratings.pdf'), 
-  plot = p, 
+  paste0(plot_dir, 'exp_2_scatterplot_predicted_vs_observed_ratings.pdf'),
+  plot = p,
   width = panel_size * n_facets + 1,  # +1 for margins/labels
   height = panel_size + 1.5,           # +1.5 for axis labels/title
   dpi = 300
 )
 
 p
+```
+
+### Uniform Predictions (equal-weight baseline, as in Exp1)
+
+Assumes all 256 colors in a colorscale are present equally — the same approach used in Exp1. This serves as a baseline to compare against the proportion-weighted predictions below.
+
+```{r}
+# ── Uniform (equal-weight) predictions per colorscale ─────────────────────────
+
+uniform_preds <- preds_per_color %>%
+  group_by(colorscale) %>%
+  summarize(
+    angry   = mean(angry_pred),
+    fearful = mean(fearful_pred),
+    happy   = mean(happy_pred),
+    sad     = mean(sad_pred),
+    disgust = mean(disgust_pred),
+    .groups = "drop"
+  ) %>%
+  rename(scale_name = colorscale) %>%
+  pivot_longer(c(angry, fearful, happy, sad, disgust),
+               names_to = "concept", values_to = "uniform_pred")
+
+# ── Join with observed ratings (grouped by concept × scale × shift) ───────────
+
+analysis_uniform <- ratings_trials_exp_grouped %>%
+  inner_join(uniform_preds, by = c("concept", "scale_name"))
+
+analysis_uniform <- analysis_uniform %>%
+  mutate(path_name = paste0(
+    "../images/shifted_maps_small/map02_",
+    scale_name, "_scaleDef_orientDef_000_", shift_code, ".png"
+  ))
+```
+
+```{r}
+# ── Plot: uniform predicted vs observed, faceted concept × shift ──────────────
+
+p_uniform <- ggplot(analysis_uniform, aes(x = uniform_pred, y = mean_rating)) +
+  geom_image(aes(image = path_name), size = 0.06) +
+  geom_smooth(method = "lm", se = FALSE, color = "#06c7bd") +
+  facet_grid(rows = vars(shift_code), cols = vars(concept)) +
+  labs(x = "Uniform Predicted Rating", y = "Human Rating") +
+  theme_linedraw() +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  coord_fixed(ratio = 1) +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    panel.spacing.y = unit(1, "lines"),
+    plot.margin     = margin(10, 20, 10, 10, "pt"),
+    axis.title      = element_text(size = 12),
+    axis.text       = element_text(size = 12),
+    strip.text      = element_text(size = 12)
+  )
+
+n_concepts <- length(unique(analysis_uniform$concept))
+panel_size <- 3.5
+
+ggsave(
+  paste0(plot_dir, "exp_2_scatterplot_uniform_pred_vs_observed.pdf"),
+  plot   = p_uniform,
+  width  = panel_size * n_concepts + 1,
+  height = panel_size * 2 + 2,
+  dpi    = 300
+)
+
+p_uniform
+```
+
+```{r}
+# ── Correlation: uniform predictions vs observed (per concept) ────────────────
+
+analysis_uniform %>%
+  group_by(concept) %>%
+  summarize(
+    r    = cor(uniform_pred, mean_rating, use = "complete.obs"),
+    r_sq = r^2,
+    n    = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(r))
+```
+
+### Weighted Predictions (color-proportion-weighted)
+
+Exp1 predictions assumed all 256 colors in a scale appear equally. Here we weight each color's predicted affect rating by the proportion of map pixels that actually display that color. Proportions were pre-computed per (map_id × scale_name × mapping_code) by `prep/compute_color_proportions.R` and are orientation/rotation/shift invariant (same pixels, different arrangement or brightness). The join to human data is at the full stimulus grain: map × scale × mapping × rotation × shift (3200 unique stimuli), with weighted_pred broadcast across rotation and shift variants.
+
+```{r}
+# ── Load proportions ──────────────────────────────────────────────────────────
+
+proportions <- read.csv(paste0(results_dir, "color_proportions.csv"),
+                        stringsAsFactors = FALSE)
+
+# ── Pivot predictions to long format ──────────────────────────────────────────
+
+concept_cols <- c("angry_pred", "happy_pred", "fearful_pred", "disgust_pred", "sad_pred")
+
+preds_long <- preds_per_color %>%
+  select(colorscale, index, all_of(concept_cols)) %>%
+  pivot_longer(all_of(concept_cols), names_to = "concept", values_to = "pred") %>%
+  mutate(concept = str_remove(concept, "_pred"))
+
+# ── Compute weighted predictions ───────────────────────────────────────────────
+# proportion × pred, summed over index, per stimulus × concept
+
+weighted_preds <- proportions %>%
+  left_join(preds_long, by = c("scale_name" = "colorscale", "index")) %>%
+  group_by(map_id, scale_name, mapping_code, rotation_code, shift_code, concept) %>%
+  summarize(weighted_pred = sum(proportion * pred), .groups = "drop")
+
+weighted_preds
+```
+
+```{r}
+# ── Fine-grained observed ratings ─────────────────────────────────────────────
+# Group at the unique-stimulus level: map × scale × mapping × rotation × shift.
+# Orientation is collapsed (mirroring preserves color proportions and counts).
+# rotation_code in the data uses bare integers ("0","90",...); filenames use
+# zero-padded strings ("000","090",...) — conversion handled in path construction.
+
+ratings_fine <- ratings_trials_exp %>%
+  mutate(map_id = as.integer(map_id)) %>%
+  group_by(concept, map_id, scale_name, mapping_code, rotation_code, shift_code) %>%
+  summarize(mean_rating = mean(response), .groups = "drop")
+
+# ── Join observed ratings with weighted predictions ────────────────────────────
+
+analysis_weighted <- ratings_fine %>%
+  left_join(weighted_preds,
+            by = c("map_id", "scale_name", "mapping_code",
+                   "rotation_code", "shift_code", "concept"))
+
+analysis_weighted
+```
+
+```{r}
+# ── Plot: weighted predicted vs observed ratings, faceted by concept ───────────
+
+analysis_grouped<- analysis_weighted %>% group_by(concept,scale_name,shift_code)%>%summarize(mean_human_rating = mean(mean_rating), mean_model_prediction = mean(weighted_pred))
+# Thumbnail path: use the shifted_maps_small image for the specific condition.
+# Falls back to scaleDef/orientDef/000 if orientations aren't meaningful here.
+analysis_grouped <- analysis_grouped %>%
+  mutate(path_name = paste0(
+    "../images/shifted_maps_small/map", "02", "_",
+    scale_name, "_", "scaleDef", "_orientDef_",
+    "000", "_", shift_code, ".png"
+  ))
+
+p_weighted <- ggplot(analysis_grouped, aes(x = mean_model_prediction, y = mean_human_rating)) +
+  geom_image(aes(image = path_name), size = 0.06) +
+  geom_smooth(method = "lm", se = FALSE, color = "#06c7bd") +
+  facet_grid(rows = vars(shift_code), cols = vars(concept)) +
+  labs(x = "Weighted Predicted Rating", y = "Human Rating") +
+  theme_linedraw() +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  coord_fixed(ratio = 1) +
+  theme(
+    panel.spacing.x  = unit(2, "lines"),
+    panel.spacing.y  = unit(1, "lines"),
+    plot.margin      = margin(10, 20, 10, 10, "pt"),
+    axis.title       = element_text(size = 12),
+    axis.text        = element_text(size = 12),
+    strip.text       = element_text(size = 12)
+  )
+
+n_concepts <- length(unique(analysis_grouped$concept))
+panel_size <- 3.5
+
+ggsave(
+  paste0(plot_dir, "exp_2_scatterplot_weighted_pred_vs_observed.pdf"),
+  plot   = p_weighted,
+  width  = panel_size * n_concepts + 1,
+  height = panel_size * 2 + 2,
+  dpi    = 300
+)
+
+p_weighted
+```
+
+```{r}
+# ── Correlation: weighted predictions vs observed (per concept) ────────────────
+
+# analysis_weighted %>%
+#   group_by(concept) %>%
+#   summarize(
+#     r     = cor(weighted_pred, mean_rating, use = "complete.obs"),
+#     r_sq  = r^2,
+#     n     = n(),
+#     .groups = "drop"
+#   ) %>%
+#   arrange(desc(r))
+
+
+analysis_grouped %>%
+  group_by(concept) %>%
+  summarize(
+    r     = cor(mean_human_rating, mean_model_prediction, use = "complete.obs"),
+    r_sq  = r^2,
+    n     = n(),
+  
+    .groups = "drop"
+  ) %>%
+  arrange(desc(r))
 ```
