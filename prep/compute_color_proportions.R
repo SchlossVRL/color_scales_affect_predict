@@ -2,13 +2,10 @@
 #
 # compute_color_proportions.R
 #
-# Reads each shifted map PNG (orientDef_000 canonical rotation) and assigns
-# every pixel to its nearest original colorscale index via RGB nearest-neighbor.
-# Saves results/color_proportions.csv with one row per
-# (map_id, scale_name, mapping_code, rotation_code, shift_code, index).
+# Reads each shifted map PNG and assigns every pixel to its exact colorscale
+# index by strict RGB matching. Requires images rendered with
+# type="cairo", antialias="none" (see prep/regenerate_shifted_maps.R).
 #
-# Shift variants are processed separately: lightshift/darkshift change pixel
-# colors, which changes which colorscale indices pixels map to.
 # Rotation is invariant (rearranges pixels but preserves counts), so
 # proportions from the _000 rotation are replicated to 090/180/270.
 #
@@ -41,29 +38,36 @@ rotation_codes <- c("0", "90", "180", "270")
 shift_codes   <- c("lightshift", "darkshift")
 
 # -------------------------------------------------------------------
-# Load reference RGB for each colorscale (256 × 3, values in [0,1])
+# Load reference RGB for each colorscale (256 x 3, values in [0,1])
 # -------------------------------------------------------------------
 
 preds <- read.csv(preds_file, stringsAsFactors = FALSE)
 
+# Use group_keys to guarantee names align with group_map order
+# (sort() and group_keys() use different collation — the original
+#  setNames(group_map(...), sort(...)) was silently misaligning palettes)
 ref_rgb_list <- preds %>%
   filter(colorscale %in% exp2_scales) %>%
   arrange(colorscale, index) %>%
   group_by(colorscale) %>%
-  group_map(~ as.matrix(.x[, c("R", "G", "B")]), .keep = FALSE) %>%
-  setNames(sort(intersect(exp2_scales, unique(preds$colorscale))))
-
-# -------------------------------------------------------------------
-# Core functions
-# -------------------------------------------------------------------
-
-nearest_palette_index <- function(unique_px, ref_rgb) {
-  d2 <- matrix(0, nrow(unique_px), nrow(ref_rgb))
-  for (ch in seq_len(3)) {
-    d2 <- d2 + outer(unique_px[, ch], ref_rgb[, ch], `-`)^2
+  {
+    keys <- group_keys(.)$colorscale
+    maps <- group_map(., ~ as.matrix(.x[, c("R", "G", "B")]), .keep = FALSE)
+    setNames(maps, keys)
   }
-  max.col(-d2)
+
+# Verify palette assignment: first RGB of each scale must match preds
+for (sn in names(ref_rgb_list)) {
+  expected <- as.numeric(preds[preds$colorscale == sn & preds$index == 1,
+                               c("R","G","B")])
+  actual   <- ref_rgb_list[[sn]][1, ]
+  stopifnot(all(abs(actual - expected) < 1e-6))
 }
+cat("Palette assignment verified for all scales.\n")
+
+# -------------------------------------------------------------------
+# Core function: strict pixel matching
+# -------------------------------------------------------------------
 
 color_proportions_from_png <- function(img_path, ref_rgb) {
   img <- readPNG(img_path)
@@ -77,14 +81,38 @@ color_proportions_from_png <- function(img_path, ref_rgb) {
   uniq_int <- unique(px_int)
   ref_int  <- round(ref_rgb * 255)
 
-  uniq_idx <- nearest_palette_index(uniq_int, ref_int)
+  # Build lookup: "R G B" string -> palette index
+  ref_key <- paste(ref_int[, 1], ref_int[, 2], ref_int[, 3])
+  palette_lookup <- setNames(seq_len(nrow(ref_int)), ref_key)
 
-  px_key   <- paste(px_int[, 1], px_int[, 2], px_int[, 3])
+  # Strict matching
   uniq_key <- paste(uniq_int[, 1], uniq_int[, 2], uniq_int[, 3])
+  uniq_idx <- palette_lookup[uniq_key]
+
+  # Flag non-matching colors
+  non_matching <- which(is.na(uniq_idx))
+  if (length(non_matching) > 0) {
+    px_key   <- paste(px_int[, 1], px_int[, 2], px_int[, 3])
+    bad_keys <- uniq_key[non_matching]
+    n_bad_px <- sum(px_key %in% bad_keys)
+    pct_bad  <- 100 * n_bad_px / nrow(px)
+    warning(sprintf(
+      "%s: %d / %d unique colors (%.1f%% of pixels) not in palette",
+      basename(img_path), length(non_matching), nrow(uniq_int), pct_bad
+    ))
+    for (j in head(non_matching, 5)) {
+      cat(sprintf("    non-palette color: (%s)\n", uniq_key[j]))
+    }
+  }
+
+  # Map all pixels to palette indices
+  px_key   <- paste(px_int[, 1], px_int[, 2], px_int[, 3])
   all_idx  <- setNames(uniq_idx, uniq_key)[px_key]
   stopifnot(length(all_idx) == nrow(px))
+  stopifnot(!anyNA(all_idx))
 
   counts <- tabulate(all_idx, nbins = nrow(ref_rgb))
+  stopifnot(sum(counts) == nrow(px))
   data.frame(
     index      = seq_len(nrow(ref_rgb)),
     proportion = counts / sum(counts)
