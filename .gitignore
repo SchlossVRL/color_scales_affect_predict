@@ -56,3 +56,6 @@ rsconnect/
 ### Ignore osf auth
 
 km_osf_pat.txt
+
+### Ignore claude code dirs
+.claude/
