@@ -409,7 +409,7 @@ for(shift in c('darkshift', 'lightshift')) {
         
         # 4. Save ScaleDef version if it doesn't exist
         if (!file.exists(path_def)) {
-          png(path_def, width = 500, height = 500)
+          png(path_def, width = 500, height = 500, type = "cairo", antialias = "none")
           par(mar = c(0,0,0,0))
           image(m_to_plot, axes = FALSE, asp = 1, useRaster = TRUE, col = col_def)
           dev.off()
@@ -417,7 +417,7 @@ for(shift in c('darkshift', 'lightshift')) {
         
         # 5. Save ScaleRev version if it doesn't exist
         if (!file.exists(path_rev)) {
-          png(path_rev, width = 500, height = 500)
+          png(path_rev, width = 500, height = 500, type = "cairo", antialias = "none")
           par(mar = c(0,0,0,0))
           image(m_to_plot, axes = FALSE, asp = 1, useRaster = TRUE, col = col_rev)
           dev.off()

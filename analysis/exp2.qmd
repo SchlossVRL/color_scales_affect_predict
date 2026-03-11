@@ -89,7 +89,7 @@ ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
 ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
 
 
-ratings_trials_exp_grouped <- ratings_trials_exp%>%group_by(concept,scale_name,shift_code)%>%summarize(mean_rating = mean(response))
+ratings_trials_exp_grouped <- ratings_trials_exp%>%group_by(concept,scale_name,mapping_code, shift_code)%>%summarize(mean_rating = mean(response))
 
 
 ### get the number of unique participants per condition in ratings_trials_exp
@@ -121,43 +121,42 @@ library(ggimage)
 
 preds_per_color <- read.csv(paste0(results_dir, "matplotlib_colorscales_w_predictions_2.csv"),
                              stringsAsFactors = FALSE)
-
-analysis_df <- ratings_trials_exp_grouped
-# %>%inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name"))
-
-analysis_df$path_name <- paste0("../images/small/map02_", analysis_df$scale_name, "_scaleDef_orientDef_000_25px.png")
-# 2. Build the plot
-p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
-  geom_image(aes(image = path_name), size = 0.05) +
-  geom_smooth(method = 'lm', se = FALSE, color = '#06c7bd') +
-  facet_wrap(~concept, nrow = 1) +
-  labs(x = 'Predicted Ratings', y = 'Human Ratings') +
-  theme_linedraw() +
-  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
-  scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
-  coord_fixed(ratio = 1) +
-  theme(
-    panel.spacing.y = unit(1, "lines"),
-    panel.spacing.x = unit(2, "lines"),
-    plot.margin = margin(10, 20, 10, 10, "pt"),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 12),
-     strip.text = element_text(size = 12)
-  )
-
-
-# 3. Save the result
-n_facets <- length(unique(analysis_df$concept))
-panel_size <- 3.5  # inches per panel
-ggsave(
-  paste0(plot_dir, 'exp_2_scatterplot_predicted_vs_observed_ratings.pdf'),
-  plot = p,
-  width = panel_size * n_facets + 1,  # +1 for margins/labels
-  height = panel_size + 1.5,           # +1.5 for axis labels/title
-  dpi = 300
-)
-
-p
+# 
+# analysis_df <- ratings_trials_exp_grouped%>%inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name"))
+# 
+# analysis_df$path_name <- paste0("../images/small/map02_", analysis_df$scale_name, "_scaleDef_orientDef_000_25px.png")
+# # 2. Build the plot
+# p <- ggplot(analysis_df, aes(x = mean_prediction, y = mean_rating)) +
+#   geom_image(aes(image = path_name), size = 0.05) +
+#   geom_smooth(method = 'lm', se = FALSE, color = '#06c7bd') +
+#   facet_wrap(~concept, nrow = 1) +
+#   labs(x = 'Predicted Ratings', y = 'Human Ratings') +
+#   theme_linedraw() +
+#   scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+#   scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+#   coord_fixed(ratio = 1) +
+#   theme(
+#     panel.spacing.y = unit(1, "lines"),
+#     panel.spacing.x = unit(2, "lines"),
+#     plot.margin = margin(10, 20, 10, 10, "pt"),
+#     axis.title = element_text(size = 12),
+#     axis.text = element_text(size = 12),
+#      strip.text = element_text(size = 12)
+#   )
+# 
+# 
+# # 3. Save the result
+# n_facets <- length(unique(analysis_df$concept))
+# panel_size <- 3.5  # inches per panel
+# ggsave(
+#   paste0(plot_dir, 'exp_2_scatterplot_predicted_vs_observed_ratings.pdf'),
+#   plot = p,
+#   width = panel_size * n_facets + 1,  # +1 for margins/labels
+#   height = panel_size + 1.5,           # +1.5 for axis labels/title
+#   dpi = 300
+# )
+# 
+# p
 ```
 
 ### Uniform Predictions (equal-weight baseline, as in Exp1)
@@ -181,15 +180,27 @@ uniform_preds <- preds_per_color %>%
   pivot_longer(c(angry, fearful, happy, sad, disgust),
                names_to = "concept", values_to = "uniform_pred")
 
-# ── Join with observed ratings (grouped by concept × scale × shift) ───────────
+# ── Join with observed ratings and collapse to 40 points per emotion ──────────
+# scaleDef+darkshift ≡ scaleRev+lightshift (both show high-end default colors)
+# scaleDef+lightshift ≡ scaleRev+darkshift (both show low-end default colors)
 
 analysis_uniform <- ratings_trials_exp_grouped %>%
-  inner_join(uniform_preds, by = c("concept", "scale_name"))
-
-analysis_uniform <- analysis_uniform %>%
+  inner_join(uniform_preds, by = c("concept", "scale_name")) %>%
+  mutate(condition = ifelse(
+    (mapping_code == "scaleDef" & shift_code == "darkshift") |
+    (mapping_code == "scaleRev" & shift_code == "lightshift"),
+    "high_end", "low_end"
+  )) %>%
+  group_by(concept, scale_name, condition) %>%
+  summarize(
+    mean_rating  = mean(mean_rating),
+    uniform_pred = mean(uniform_pred),
+    .groups = "drop"
+  ) %>%
   mutate(path_name = paste0(
     "../images/shifted_maps_small/map02_",
-    scale_name, "_scaleDef_orientDef_000_", shift_code, ".png"
+    scale_name, "_scaleDef_orientDef_000_",
+    ifelse(condition == "high_end", "darkshift", "lightshift"), ".png"
   ))
 ```
 
@@ -199,7 +210,7 @@ analysis_uniform <- analysis_uniform %>%
 p_uniform <- ggplot(analysis_uniform, aes(x = uniform_pred, y = mean_rating)) +
   geom_image(aes(image = path_name), size = 0.06) +
   geom_smooth(method = "lm", se = FALSE, color = "#06c7bd") +
-  facet_grid(rows = vars(shift_code), cols = vars(concept)) +
+  facet_grid( cols = vars(concept)) +
   labs(x = "Uniform Predicted Rating", y = "Human Rating") +
   theme_linedraw() +
   scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
@@ -235,7 +246,6 @@ analysis_uniform %>%
   group_by(concept) %>%
   summarize(
     r    = cor(uniform_pred, mean_rating, use = "complete.obs"),
-    r_sq = r^2,
     n    = n(),
     .groups = "drop"
   ) %>%
@@ -297,20 +307,31 @@ analysis_weighted
 ```{r}
 # ── Plot: weighted predicted vs observed ratings, faceted by concept ───────────
 
-analysis_grouped<- analysis_weighted %>% group_by(concept,scale_name,shift_code)%>%summarize(mean_human_rating = mean(mean_rating), mean_model_prediction = mean(weighted_pred))
-# Thumbnail path: use the shifted_maps_small image for the specific condition.
-# Falls back to scaleDef/orientDef/000 if orientations aren't meaningful here.
-analysis_grouped <- analysis_grouped %>%
+# Collapse to 40 points per emotion (20 scales × 2 conditions)
+# scaleDef+darkshift ≡ scaleRev+lightshift (both show high-end default colors)
+# scaleDef+lightshift ≡ scaleRev+darkshift (both show low-end default colors)
+analysis_grouped <- analysis_weighted %>%
+  mutate(condition = ifelse(
+    (mapping_code == "scaleDef" & shift_code == "darkshift") |
+    (mapping_code == "scaleRev" & shift_code == "lightshift"),
+    "high_end", "low_end"
+  )) %>%
+  group_by(concept, scale_name, condition) %>%
+  summarize(
+    mean_human_rating     = mean(mean_rating),
+    mean_model_prediction = mean(weighted_pred),
+    .groups = "drop"
+  ) %>%
   mutate(path_name = paste0(
-    "../images/shifted_maps_small/map", "02", "_",
-    scale_name, "_", "scaleDef", "_orientDef_",
-    "000", "_", shift_code, ".png"
+    "../images/shifted_maps_small/map02_",
+    scale_name, "_scaleDef_orientDef_000_",
+    ifelse(condition == "high_end", "darkshift", "lightshift"), ".png"
   ))
 
 p_weighted <- ggplot(analysis_grouped, aes(x = mean_model_prediction, y = mean_human_rating)) +
   geom_image(aes(image = path_name), size = 0.06) +
   geom_smooth(method = "lm", se = FALSE, color = "#06c7bd") +
-  facet_grid(rows = vars(shift_code), cols = vars(concept)) +
+  facet_grid( cols = vars(concept)) +
   labs(x = "Weighted Predicted Rating", y = "Human Rating") +
   theme_linedraw() +
   scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
@@ -357,10 +378,14 @@ analysis_grouped %>%
   group_by(concept) %>%
   summarize(
     r     = cor(mean_human_rating, mean_model_prediction, use = "complete.obs"),
-    r_sq  = r^2,
     n     = n(),
   
     .groups = "drop"
   ) %>%
   arrange(desc(r))
+```
+
+```{r}
+tmp <- read.csv(paste0(results_dir,'matplotlib_colorscales_w_predictions_2.csv'))
+tmp%>%filter(colorscale=='Greys')
 ```
