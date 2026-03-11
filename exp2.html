@@ -71,8 +71,8 @@
             /// map condition_num such that they get mapped to one of the following conditions. 3, 4, 11, 12, 18, 21, 32, 37, 40, 42, 50, 54, 57, 63, 65, 66, 69, 71, 76, 77
             /// since there are 18 conditions total, we can do this by taking mod 20 of the condition number obtained from jspsych pipe
             const condition_map = [12, 39];
-            const mapped_condition_num = condition_map[condition_num % 2];
-            // const mapped_condition_num = condition_num;`
+            // const mapped_condition_num = condition_map[condition_num % 2];
+            const mapped_condition_num = 12;
             console.log("Mapped condition number: ", mapped_condition_num);
             // const color_scale_assignment = latinSquareArray[condition_num];
             const color_scale_assignment = latinSquareArray[mapped_condition_num];
@@ -463,12 +463,12 @@
                                                         var rating_trial = {
                                                             type: jsPsychHtmlSliderResponse,
                                                             stimulus: `<div style="width:500px;">
-                            <p style="font-size:50px; font-weight:bold;"
-                            >${concept}</p>
-                            <div style="width:240px; margin: auto;">
-                                <img src="${this_map}" style= "width:200px"alt="img">
-                            </div>
-                        </div>`,
+                                                                        <p style="font-size:50px; font-weight:bold;"
+                                                                        >${concept}</p>
+                                                                        <div style="width:240px; margin: auto;">
+                                                                            <img src="${this_map}" style= "width:200px"alt="img">
+                                                                        </div>
+                                                                    </div>`,
                                                                 labels: ['Not at all', 'Very Much'],
                                                                 slider_width: 500,
                                                                 require_movement: false,
