@@ -110,13 +110,6 @@ write.csv(ratings_trials_exp_grouped, '../data/exp2_ratings_trials_exp_grouped.c
 ```
 
 ```{r}
-
-ratings_trials_exp_grouped%>%ggplot(aes(x=scale_name, y=mean_rating, col=shift_code, group=shift_code))+
-  geom_point()+ facet_grid(rows='concept')+geom_line()
-
-```
-
-```{r}
 library(ggimage)
 
 preds_per_color <- read.csv(paste0(results_dir, "matplotlib_colorscales_w_predictions_2.csv"),
