@@ -69,7 +69,10 @@ print(paste0('we have data from ',length(data_files),' participants'))
 
 
 
-df_list <- lapply(data_files, read.csv)
+df_list <- lapply(data_files, function(f) {
+  df <- read.csv(f)
+  df[, !names(df) %in% "SONA_id", drop = FALSE]
+})
 
 experiment_data_raw<- bind_rows(df_list)
 
