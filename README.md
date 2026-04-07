@@ -4,7 +4,7 @@
 
 This repository contains the experiment data and analyses for `Predicting affective connotation of visualizations from their constituent colors'.
 
-jsPsych code for the 4 studies (experiment 3 was split into two studies, one for dot plots and one for bar plots which were later combined in analysis) can be found in the exp1.html, exp2.html, exp3_dots.html, exp3_bars.html files in the root directory. 
+jsPsych code for the 4 studies (experiment 3 was split into two studies, one for dot plots and one for bar plots which were later combined in analysis) can be found in the `exp1.html`, `exp2.html`, `exp3_dots.html`, and `exp3_bars.html` files in the root directory. 
 
 Corresponding analysis notebooks in .qmd format for each experiment can be found in the analysis directory. Analysis for experiment 3 was combined in a single analysis file exp3.qmd. Additionally, there is included rm_ids.R, rm_ids_combine.R, and Preprocessing.R used to remove the subjecty pool ids or participants and prep ratings data for analysis. 
 
