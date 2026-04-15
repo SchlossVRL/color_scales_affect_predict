@@ -80,8 +80,8 @@ mirror <- function(matrix) {
 # note, image() seems to plot a matrix rotated counter-clockwise 90 deg
 # relative to how it plots a raster object, so we counteract that by 
 # rotating the matrix 90 deg clockwise before plotting
-save.map.png <- function(matrix, file, pal) {
-	png(filename = file, width = 500, height = 500, units = 'px')
+save.map.png <- function(matrix, file, pal, w = 500, h = 500) {
+	png(filename = file, width = w, height = h, units = 'px')
 	par(mar = c(0, 0, 0, 0))
 	image(clockwise90(matrix), axes = F, asp = 1, useRaster = T, col = pal)
 	dev.off()
