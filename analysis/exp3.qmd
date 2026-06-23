@@ -109,7 +109,7 @@ data <- data %>%
   )
 ```
 
-# Weigthed versus Unweighted Association Correlations
+# Weighted versus unweighted Association Correlations
 
 ## Data Prep
 
@@ -676,6 +676,37 @@ ind_corrs_bars <- ind_corrs %>%
   filter(plot == "bar")
 ```
 
+Grab cumulative correlations
+```{r}
+full_corr <- r_var_table %>% 
+  filter(model_type == "a")
+
+```
+
+```{r}
+full_corr <- full_corr %>% 
+  select(R, plot, concept)
+```
+
+```{r}
+dot_full_corr <- full_corr %>% 
+  filter(plot == "dot")
+
+bar_full_corr <- full_corr %>% 
+  filter(plot == "bar")
+```
+
+
+```{r}
+n <- 36
+df <- n - 2
+
+tcrit <- qt(.975, df)
+
+rcrit <- sqrt(tcrit^2 / (tcrit^2 + df))
+
+rcrit
+```
 
 ## Plotting
 ```{r}
@@ -683,7 +714,7 @@ ind_plot <- ggplot(ind_corrs, aes(x = r)) +
   geom_histogram(binwidth = 0.2, color = "black") +
   facet_wrap(~ concept, nrow = 1) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-  scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(-1, 1), expand = c(0, 0)) +
   labs(
     x = "Correlation",
     y = "Number of Participants"
@@ -705,12 +736,21 @@ ind_plot <- ggplot(ind_corrs, aes(x = r)) +
 
 ind_plot
 ```
+
 ```{r}
 ind_plot_dots <- ggplot(ind_corrs_dots, aes(x = r)) +
-  geom_histogram(binwidth = 0.2, color = "black") +
+  geom_histogram(binwidth = 0.2, color = "black", fill = "grey") +
+  geom_vline(xintercept = rcrit,
+             linetype = "dashed",
+             linewidth = 0.8) +
+  geom_vline(data = dot_full_corr,
+             aes(xintercept = R),
+             linetype = "solid",
+             linewidth = 0.8,
+             color = "red") +
   facet_wrap(~ concept, nrow = 1) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-  scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  scale_x_continuous(limits = c(-1, 1), expand = c(0, 0)) +
   labs(
     x = "Correlation",
     y = "Number of Participants"
@@ -734,10 +774,18 @@ ind_plot_dots
 ```
 ```{r}
 ind_plot_bars <- ggplot(ind_corrs_bars, aes(x = r)) +
-  geom_histogram(binwidth = 0.2, color = "black") +
+  geom_histogram(binwidth = 0.2, color = "black", fill = "grey") +
+  geom_vline(xintercept = rcrit,
+             linetype = "dashed",
+             linewidth = 0.8) +
+  geom_vline(data = bar_full_corr,
+             aes(xintercept = R),
+             linetype = "solid",
+             linewidth = 0.8,
+             color = "red") +
   facet_wrap(~ concept, nrow = 1) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-  scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  scale_x_continuous(limits = c(-1, 1), expand = c(0, 0)) +
   labs(
     x = "Correlation",
     y = "Number of Participants"
