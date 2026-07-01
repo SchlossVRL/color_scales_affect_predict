@@ -243,6 +243,92 @@ ggsave(
 p
 ```
 
+### Individual Differences
+
+#### Data prep
+
+```{r}
+# summarize each participant's mean rating per concept x scale, then join the
+# model predictions (uniform-presence assumption) on concept + scale_name
+data_ind_sum <- ratings_trials_exp %>%
+  group_by(subject_id, concept, scale_name) %>%
+  summarize(mean_rating = mean(response), .groups = "drop") %>%
+  inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name")) %>%
+  mutate(
+    mean_rating = as.numeric(mean_rating),
+    mean_prediction = as.numeric(mean_prediction)
+  )
+```
+
+#### Correlations
+
+```{r}
+# per participant, per concept: correlate true (human) vs predicted ratings
+ind_corrs <- data_ind_sum %>%
+  group_by(subject_id, concept) %>%
+  summarize(
+    n = n(),
+    test = list(cor.test(mean_rating, mean_prediction, method = "pearson")),
+
+    r = test[[1]]$estimate,
+    p = test[[1]]$p.value,
+    conf_low = test[[1]]$conf.int[1],
+    conf_high = test[[1]]$conf.int[2],
+    .groups = "drop"
+  )
+```
+
+```{r}
+ind_corrs <- ind_corrs %>%
+  mutate(
+    sig = case_when(
+      p < 0.001 ~ "***",
+      p < 0.01  ~ "**",
+      p < 0.05  ~ "*",
+      TRUE ~ "ns"
+    )
+  )
+```
+
+#### Plotting
+
+```{r}
+ind_plot <- ggplot(ind_corrs, aes(x = r)) +
+  geom_histogram(binwidth = 0.2, color = "black") +
+  facet_wrap(~ concept, nrow = 1) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+  scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+  ylim(0,40)+
+  labs(
+    x = "Correlation",
+    y = "Number of Participants"
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank(),
+    panel.grid = element_blank(),
+    axis.line = element_line(color = "black"),
+    panel.spacing.x = unit(2, "lines"),
+    panel.spacing.y = unit(1, "lines"),
+    plot.margin     = margin(10, 20, 10, 10, "pt"),
+    axis.title      = element_text(size = 12),
+    axis.text       = element_text(size = 12),
+    strip.text      = element_text(size = 12)
+  )
+
+ind_plot
+```
+
+```{r}
+ggsave(
+  paste0(plot_dir, "exp1_ind_corr_freq.pdf"),
+  ind_plot,
+  width = 14,
+  height = 2
+)
+```
+
 ### Subsetting scales for future experiments (40 out of 80)
 
 ```{r}

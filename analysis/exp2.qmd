@@ -381,6 +381,142 @@ analysis_grouped %>%
   arrange(desc(r))
 ```
 
+### Individual Differences
+
+Per-participant correlations between human ratings and model predictions, computed separately for the two models. The **data-aware (weighted)** model accounts for the specific maps each participant saw and the pixel-color distributions within them; the **data-agnostic (uniform)** model ignores the specific map and assumes each color in a scale was shown equally often. Both reuse the `weighted_preds` / `uniform_preds` objects built above.
+
+#### Data-aware model: per-participant correlations
+
+```{r}
+# Per subject, at the full stimulus grain (map × scale × mapping × rotation × shift),
+# join the weighted predictions, then correlate human vs predicted within each concept.
+data_aware_ind_sum <- ratings_trials_exp %>%
+  mutate(map_id = as.integer(map_id)) %>%
+  group_by(subject_id, concept, map_id, scale_name, mapping_code, rotation_code, shift_code) %>%
+  summarize(mean_rating = mean(response), .groups = "drop") %>%
+  left_join(weighted_preds,
+            by = c("map_id", "scale_name", "mapping_code",
+                   "rotation_code", "shift_code", "concept")) %>%
+  filter(!is.na(weighted_pred)) %>%
+  mutate(
+    mean_rating   = as.numeric(mean_rating),
+    weighted_pred = as.numeric(weighted_pred)
+  )
+
+ind_corrs_aware <- data_aware_ind_sum %>%
+  group_by(subject_id, concept) %>%
+  summarize(
+    n = n(),
+    test = list(cor.test(mean_rating, weighted_pred, method = "pearson")),
+
+    r = test[[1]]$estimate,
+    p = test[[1]]$p.value,
+    conf_low = test[[1]]$conf.int[1],
+    conf_high = test[[1]]$conf.int[2],
+    .groups = "drop"
+  ) %>%
+  mutate(
+    sig = case_when(
+      p < 0.001 ~ "***",
+      p < 0.01  ~ "**",
+      p < 0.05  ~ "*",
+      TRUE ~ "ns"
+    ),
+    model = "Data-aware (weighted)"
+  )
+```
+
+#### Data-agnostic model: per-participant correlations
+
+```{r}
+# Per subject, at the scale × condition grain (mirroring the aggregate uniform analysis),
+# join the uniform predictions, then correlate human vs predicted within each concept.
+data_agnostic_ind_sum <- ratings_trials_exp %>%
+  mutate(condition = ifelse(
+    (mapping_code == "scaleDef" & shift_code == "darkshift") |
+    (mapping_code == "scaleRev" & shift_code == "lightshift"),
+    "high_end", "low_end"
+  )) %>%
+  group_by(subject_id, concept, scale_name, condition) %>%
+  summarize(mean_rating = mean(response), .groups = "drop") %>%
+  inner_join(uniform_preds, by = c("concept", "scale_name")) %>%
+  mutate(
+    mean_rating  = as.numeric(mean_rating),
+    uniform_pred = as.numeric(uniform_pred)
+  )
+
+ind_corrs_agnostic <- data_agnostic_ind_sum %>%
+  group_by(subject_id, concept) %>%
+  summarize(
+    n = n(),
+    test = list(cor.test(mean_rating, uniform_pred, method = "pearson")),
+
+    r = test[[1]]$estimate,
+    p = test[[1]]$p.value,
+    conf_low = test[[1]]$conf.int[1],
+    conf_high = test[[1]]$conf.int[2],
+    .groups = "drop"
+  ) %>%
+  mutate(
+    sig = case_when(
+      p < 0.001 ~ "***",
+      p < 0.01  ~ "**",
+      p < 0.05  ~ "*",
+      TRUE ~ "ns"
+    ),
+    model = "Data-agnostic (uniform)"
+  )
+```
+
+#### Plotting
+
+```{r}
+# Shared histogram builder so both models render identically.
+ind_corr_hist <- function(corr_df) {
+  ggplot(corr_df, aes(x = r)) +
+    geom_histogram(binwidth = 0.2, color = "black") +
+    facet_wrap(~ concept, nrow = 1) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+    scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+    labs(x = "Correlation", y = "Number of Participants") +
+    theme_classic() +
+    theme(
+      legend.position = "none",
+      panel.background = element_blank(),
+      panel.grid = element_blank(),
+      axis.line = element_line(color = "black"),
+      panel.spacing.x = unit(2, "lines"),
+      panel.spacing.y = unit(1, "lines"),
+      plot.margin     = margin(10, 20, 10, 10, "pt"),
+      axis.title      = element_text(size = 12),
+      axis.text       = element_text(size = 12),
+      strip.text      = element_text(size = 12)
+    )
+}
+
+ind_plot_aware    <- ind_corr_hist(ind_corrs_aware)
+ind_plot_agnostic <- ind_corr_hist(ind_corrs_agnostic)
+
+ind_plot_aware
+ind_plot_agnostic
+```
+
+```{r}
+ggsave(
+  paste0(plot_dir, "exp2_ind_corr_freq_dataaware.pdf"),
+  ind_plot_aware,
+  width = 14,
+  height = 2
+)
+
+ggsave(
+  paste0(plot_dir, "exp2_ind_corr_freq_dataagnostic.pdf"),
+  ind_plot_agnostic,
+  width = 14,
+  height = 2
+)
+```
+
 ```{r}
 tmp <- read.csv(paste0(results_dir,'matplotlib_colorscales_w_predictions_2.csv'))
 tmp%>%filter(colorscale=='Greys')
