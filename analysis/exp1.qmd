@@ -329,6 +329,85 @@ ggsave(
 )
 ```
 
+### Correlations across rendered maps (map_id x rotation x mirror)
+
+Instead of correlating per participant, here we correlate per *rendered map*.
+Each rendered map is a unique combination of the underlying data pattern
+(`map_id`) x rotation x orientation (mirror) -> 10 x 4 x 2 = 80 rendered maps.
+For each, we correlate the mean human rating against the (uniform) model
+prediction across its ~74 scale x mapping stimuli, giving 80 correlations per
+emotion. Predictions for a scale's default and reversed mappings are identical
+under the uniform-presence assumption.
+
+```{r}
+# derive map_id / rotation / orientation from image_path (robust to the
+# gist_earth column-parsing quirk), then average ratings per rendered-map stimulus
+map_stim <- ratings_trials_exp %>%
+  mutate(
+    map_id      = str_extract(image_path, "(?<=map)\\d+"),
+    orientation = str_extract(image_path, "orientDef|orientMir"),
+    rotation    = str_extract(image_path, "\\d{3}(?=\\.png)"),
+    group_id    = paste(map_id, rotation, orientation, sep = "_")
+  ) %>%
+  group_by(group_id, map_id, rotation, orientation, concept, scale_name, mapping_code) %>%
+  summarize(mean_rating = mean(as.numeric(response)), .groups = "drop") %>%
+  inner_join(predicted_ratings_grouped_uniform_long, by = c("concept", "scale_name")) %>%
+  mutate(mean_prediction = as.numeric(mean_prediction))
+```
+
+```{r}
+# one correlation per rendered map, per concept (over its scale x mapping stimuli)
+map_corrs <- map_stim %>%
+  group_by(group_id, map_id, rotation, orientation, concept) %>%
+  summarize(
+    n = n(),
+    r = cor(mean_rating, mean_prediction, method = "pearson"),
+    .groups = "drop"
+  )
+
+# summary across the 80 rendered maps
+map_corrs %>%
+  group_by(concept) %>%
+  summarize(mean_r = mean(r), sd = sd(r), min = min(r), max = max(r), n_maps = n())
+```
+
+```{r}
+map_corr_plot <- ggplot(map_corrs, aes(x = r)) +
+  geom_histogram(binwidth = 0.1, color = "black", fill = "grey35") +
+  facet_wrap(~ concept, nrow = 1) +
+  scale_y_continuous(limits = c(0, 40), breaks = c(0, 10, 20, 30, 40),
+                     expand = expansion(mult = c(0, 0))) +
+  scale_x_continuous(limits = c(-.5, 1), expand = c(0, 0)) +
+  labs(
+    x = "Correlation",
+    y = "Number of Maps"
+  ) +
+  theme_classic() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank(),
+    panel.grid = element_blank(),
+    axis.line = element_line(color = "black"),
+    panel.spacing.x = unit(2, "lines"),
+    panel.spacing.y = unit(1, "lines"),
+    plot.margin     = margin(10, 20, 10, 10, "pt"),
+    axis.title      = element_text(size = 12),
+    axis.text       = element_text(size = 12),
+    strip.text      = element_text(size = 12)
+  )
+
+map_corr_plot
+```
+
+```{r}
+ggsave(
+  paste0(plot_dir, "exp1_map_corr_freq.pdf"),
+  map_corr_plot,
+  width = 14,
+  height = 2
+)
+```
+
 ### Subsetting scales for future experiments (40 out of 80)
 
 ```{r}
