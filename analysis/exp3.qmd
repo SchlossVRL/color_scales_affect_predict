@@ -113,7 +113,7 @@ data <- data %>%
 
 ## Data Prep
 
-Mirror versions of each stimuli were created for balancing, but we average over for our analysis. Therefore we group by: plot type: `plot`, emotion: `concept`, emotion strength paring: `AssocCond`, version of pairing: `Version`, palette: `Palette`, and color order based on association strength: `arrange`. 
+Mirror versions of each stimuli were created for balancing, but we average over for our analysis. Therefore we group by: plot type: `plot`, emotion: `concept`, emotion strength paring: `AssocCond`, version of pairing: `Version`, palette: `Palette`, and color order based on association strength: `arrange`.
 
 ```{r}
 #summarize data for plotting
@@ -371,7 +371,7 @@ ggsave(
 )
 ```
 
-#Difference Scores
+# Difference Scores
 
 ```{r}
 #pivot data arrange values are separate columns to compare across same plots with different y-values for same level of associated colors
@@ -414,7 +414,6 @@ pred_diff_data <- pred_diff_data %>%
   )
 
 ```
-
 
 ```{r}
 #combine data
@@ -459,7 +458,6 @@ diff_data_sum <- diff_data %>%
   ungroup()
 
 ```
-
 
 ```{r}
 #correlations for difference scores and predicted unweighted difference scores
@@ -579,10 +577,10 @@ ggsave(
 )
 ```
 
-
 #Individual Differences
 
 ## Data prep
+
 ```{r}
 #summarize data for plotting
 data_ind_sum <- data %>% 
@@ -643,6 +641,7 @@ ind_corrs_bars <- ind_corrs %>%
 ```
 
 Grab cumulative correlations
+
 ```{r}
 full_corr <- r_var_table %>% 
   filter(model_type == "a")
@@ -662,7 +661,6 @@ bar_full_corr <- full_corr %>%
   filter(plot == "bar")
 ```
 
-
 ```{r}
 n <- 36
 df <- n - 2
@@ -675,6 +673,7 @@ rcrit
 ```
 
 ## Plotting
+
 ```{r}
 ind_plot <- ggplot(ind_corrs, aes(x = r)) +
   geom_histogram(binwidth = 0.2, color = "black") +
@@ -738,6 +737,7 @@ ind_plot_dots <- ggplot(ind_corrs_dots, aes(x = r)) +
 
 ind_plot_dots
 ```
+
 ```{r}
 ind_plot_bars <- ggplot(ind_corrs_bars, aes(x = r)) +
   geom_histogram(binwidth = 0.2, color = "black", fill = "grey") +
@@ -773,6 +773,7 @@ ind_plot_bars <- ggplot(ind_corrs_bars, aes(x = r)) +
 
 ind_plot_bars
 ```
+
 ```{r}
 ggsave(
   "../plots/exp3_ind_corr_freq.pdf",
@@ -1074,4 +1075,3 @@ sad_bars_m <- lmer(diff_score~assoc_diff_c+(1+assoc_diff_c|subject_id),
                 ))
 summary(sad_bars_m)
 ```
-
