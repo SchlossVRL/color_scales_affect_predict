@@ -238,7 +238,7 @@ p_uniform
 ```{r}
 # ── Correlation: uniform predictions vs observed (per concept) ────────────────
 
-analysis_uniform %>%
+uniform_corrs_by_concept <- analysis_uniform %>%
   group_by(concept) %>%
   summarize(
     r    = cor(uniform_pred, mean_rating, use = "complete.obs"),
@@ -246,6 +246,8 @@ analysis_uniform %>%
     .groups = "drop"
   ) %>%
   arrange(desc(r))
+
+uniform_corrs_by_concept
 ```
 
 ### Weighted Predictions (color-proportion-weighted)
@@ -370,15 +372,104 @@ p_weighted
 #   arrange(desc(r))
 
 
-analysis_grouped %>%
+weighted_corrs_by_concept <- analysis_grouped %>%
   group_by(concept) %>%
   summarize(
     r     = cor(mean_human_rating, mean_model_prediction, use = "complete.obs"),
     n     = n(),
-  
+
     .groups = "drop"
   ) %>%
   arrange(desc(r))
+
+weighted_corrs_by_concept
+```
+
+### Comparing weighted vs. uniform correlations (Fisher r-to-z)
+
+Aggregate-level correlations (40 scale × condition points per concept) for the weighted and uniform models are compared per concept using a Fisher r-to-z test. Note this test assumes the two correlations are independent, which is not strictly true here since both are computed against the same underlying human ratings — treat these as a first pass; a dependent-correlations test (e.g. the Steiger-recommended Williams t-test / `cocor`) is the more appropriate follow-up.
+
+One-tailed, testing the directional hypothesis that the weighted model correlates more strongly with human ratings than the uniform model (r1 is assumed to be the weighted correlation).
+
+```{r}
+# ── Fisher r-to-z test for two (treated-as-independent) correlations ─────────
+# One-tailed: tests r1 > r2 (call with r1 = weighted, r2 = uniform)
+
+fisher_r_to_z_test <- function(r1, n1, r2, n2) {
+  z1 <- atanh(r1)
+  z2 <- atanh(r2)
+  se <- sqrt(1 / (n1 - 3) + 1 / (n2 - 3))
+  z  <- (z1 - z2) / se
+  p  <- 1 - pnorm(z)
+  tibble(z_diff = z, p_value = p)
+}
+
+corr_comparison <- uniform_corrs_by_concept %>%
+  rename(r_uniform = r, n_uniform = n) %>%
+  inner_join(
+    weighted_corrs_by_concept %>% rename(r_weighted = r, n_weighted = n),
+    by = "concept"
+  ) %>%
+  rowwise() %>%
+  mutate(fisher_r_to_z_test(r_weighted, n_weighted, r_uniform, n_uniform)) %>%
+  ungroup() %>%
+  mutate(
+    sig = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE ~ "ns"
+    )
+  ) %>%
+  arrange(p_value)
+
+corr_comparison
+```
+
+### Comparing weighted vs. uniform correlations (Steiger-recommended Williams t-test)
+
+The Fisher r-to-z test above treats `r_weighted` and `r_uniform` as independent, but they aren't: both are computed against the same 40 human-rating points, just correlated with two different predictors (weighted_pred and uniform_pred). This is the "overlapping/dependent correlations" case (two correlations sharing one variable), for which Steiger (1980) recommends the Williams (1959) modification of Hotelling's t-test over the naive Fisher r-to-z test. It additionally requires `r23`, the correlation *between* the two predictors themselves. `psych::r.test()` implements this directly (Steiger's advice, per the function's own docs), so we use that rather than a hand-rolled version.
+
+One-tailed, same directional hypothesis as above (weighted > uniform).
+
+```{r}
+# ── Steiger-recommended Williams t-test for two dependent/overlapping correlations ──
+# r12 = cor(Y, X1), r13 = cor(Y, X2), r23 = cor(X1, X2); tests r12 > r13 (one-tailed)
+# psych::r.test() implements Williams (1959) as recommended by Steiger (1980).
+
+steiger_williams_test <- function(r12, r13, r23, n) {
+  res <- psych::r.test(n = n, r12 = r12, r13 = r13, r23 = r23, twotailed = FALSE)
+  tibble(t_stat = res$t, df = n - 3, p_value = res$p)
+}
+
+# Pair up the two prediction sets at the same grain (concept × scale × condition)
+# so we can compute r23 = cor(weighted_pred, uniform_pred).
+combined_preds <- analysis_uniform %>%
+  inner_join(analysis_grouped, by = c("concept", "scale_name", "condition"))
+
+steiger_comparison <- combined_preds %>%
+  group_by(concept) %>%
+  summarize(
+    r_weighted = cor(mean_human_rating, mean_model_prediction),
+    r_uniform  = cor(mean_rating, uniform_pred),
+    r_wu       = cor(mean_model_prediction, uniform_pred),
+    n          = n(),
+    .groups = "drop"
+  ) %>%
+  rowwise() %>%
+  mutate(steiger_williams_test(r_weighted, r_uniform, r_wu, n)) %>%
+  ungroup() %>%
+  mutate(
+    sig = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE ~ "ns"
+    )
+  ) %>%
+  arrange(p_value)
+
+steiger_comparison
 ```
 
 ### Individual Differences

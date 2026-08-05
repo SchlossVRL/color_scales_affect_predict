@@ -13,7 +13,7 @@ rm(list = ls())
 
 ```{r}
 # List of packages
-packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "purrr", "combinat", "ggimage","dplyr","tidyverse","knitr", "readxl", "writexl", "tidytext", "forcats", "ggrepel", "stringr", "jsonlite", "MuMIn")
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "purrr", "combinat", "ggimage","dplyr","tidyverse","knitr", "readxl", "writexl", "tidytext", "forcats", "ggrepel", "stringr", "jsonlite", "MuMIn", "psych")
 ```
 
 ```{r}
@@ -173,6 +173,46 @@ r_var_table <- tibble(
   df = sapply(variable_corr, function(x) x$parameter[1]),
   p = sapply(variable_corr, function(x) x$p.value),
 )
+```
+
+## Comparing weighted vs. unweighted association correlations (Steiger-recommended Williams t-test)
+
+`r_a` (unweighted, AvgEmoPred) and `r_wa` (weighted, YAvgEmoPred) above are each computed against the same `mean_rating` values within a plot type × concept group, so they are dependent/overlapping correlations, not independent ones (same situation as the weighted-vs-uniform comparison in exp2). We use the Williams (1959) test as recommended by Steiger (1980), via `psych::r.test()`, rather than a naive (and here inappropriate) Fisher r-to-z test.
+
+Unlike exp2, there's no consistent a priori direction here — the weighted model outperforms the unweighted one for some plot/concept combinations (e.g. bars: angry, happy, sad) but not others (e.g. dots, where unweighted wins throughout) — so this uses a two-tailed test.
+
+```{r}
+# ── Steiger-recommended Williams t-test for two dependent/overlapping correlations ──
+# r12 = cor(Y, X1), r13 = cor(Y, X2), r23 = cor(X1, X2)
+
+steiger_williams_test <- function(r12, r13, r23, n, twotailed = TRUE) {
+  res <- psych::r.test(n = n, r12 = r12, r13 = r13, r23 = r23, twotailed = twotailed)
+  tibble(t_stat = res$t, df = n - 3, p_value = res$p)
+}
+
+assoc_corr_comparison <- data_sum %>%
+  group_by(plot, concept) %>%
+  summarize(
+    r_weighted      = cor(mean_rating, YAvgEmoPred),
+    r_unweighted    = cor(mean_rating, AvgEmoPred),
+    r_between_preds = cor(YAvgEmoPred, AvgEmoPred),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  rowwise() %>%
+  mutate(steiger_williams_test(r_weighted, r_unweighted, r_between_preds, n)) %>%
+  ungroup() %>%
+  mutate(
+    sig = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE ~ "ns"
+    )
+  ) %>%
+  arrange(p_value)
+
+assoc_corr_comparison
 ```
 
 ## Plotting
