@@ -113,6 +113,8 @@ data <- data %>%
 
 ## Data Prep
 
+Mirror versions of each stimuli were created for balancing, but we average over for our analysis. Therefore we group by: plot type: `plot`, emotion: `concept`, emotion strength paring: `AssocCond`, version of pairing: `Version`, palette: `Palette`, and color order based on association strength: `arrange`. 
+
 ```{r}
 #summarize data for plotting
 data_sum <- data %>% 
@@ -222,7 +224,7 @@ assoc_corr_comparison
 data_sum <- data_sum %>% 
   mutate(
     filepath = paste0(
-      current_dir,"../images/dots_bars_small/",
+      current_dir,"/../images/dots_bars_small/",
       concept, "_", AssocCond, "_", Version, "_", Palette, "_", arrange,
       ".png"
     )
@@ -252,6 +254,7 @@ r_labels <- r_var_table %>%
 ```
 
 ```{r}
+#dots corr plot - unweighted
 p_assoc_dots <- ggplot(data_sum %>% filter(plot == "dot"), aes(x = AvgEmoPred, y = mean_rating)) +
 #   geom_point(
 #   aes(color = arrange),
@@ -297,6 +300,7 @@ p_assoc_dots
 ```
 
 ```{r}
+#bars corr plot - unweighted 
 p_assoc_bars <- ggplot(data_sum %>% filter(plot == "bar"), aes(x = AvgEmoPred, y = mean_rating)) +
 #   geom_point(
 #   aes(color = arrange),
@@ -411,30 +415,6 @@ pred_diff_data <- pred_diff_data %>%
 
 ```
 
-```{r}
-#same for weighted predictions
-  
-Ypred_diff_data <- data %>% 
-  select(subject_id, plot, AssocCond, Version, Palette, concept, arrange, YAvgEmoPred) %>%
-  pivot_wider(
-    names_from = arrange,
-    values_from = YAvgEmoPred
-    ) 
-
-Ypred_diff_data <- Ypred_diff_data %>%
-  mutate(
-    Ypred_strong_big = map_dbl(strong_big, mean),
-    Ypred_weak_big   = map_dbl(weak_big, mean),
-    Ypred_diff_score = Ypred_strong_big - Ypred_weak_big
-  )
-
-#recalc YAvgEmoPred
-Ypred_diff_data <- Ypred_diff_data %>%
-  mutate(
-    YAvgEmoPred = rowMeans(select(.,Ypred_strong_big,Ypred_weak_big))
-  )
-
-```
 
 ```{r}
 #combine data
@@ -442,9 +422,6 @@ Ypred_diff_data <- Ypred_diff_data %>%
 diff_data <- diff_data %>% 
   left_join(pred_diff_data %>% select(subject_id, plot, AssocCond, Version, Palette, concept, pred_strong_big, pred_weak_big, AvgEmoPred), by = c("subject_id", "plot", "AssocCond", "Version", "Palette", "concept"))
 
-
-diff_data <- diff_data %>% 
-  left_join(Ypred_diff_data %>% select(subject_id, plot, AssocCond, Version, Palette, concept, Ypred_strong_big, Ypred_weak_big, Ypred_diff_score, YAvgEmoPred), by = c("subject_id", "plot", "AssocCond", "Version", "Palette", "concept"))
 ```
 
 ```{r}
@@ -459,7 +436,7 @@ diff_data <- diff_data %>%
     assoc_3_4 = rowMeans(select(., Emo3, Emo4))
   )
 
-#calculate the difference in association stregth between stronger and weaker association - use abs() as the strong assocaites could be Emo 1 and 2 or Emo 3 and 4
+#calculate the difference in association strength between stronger and weaker association - use abs() as the strong associates could be Emo 1 and 2 or Emo 3 and 4
 diff_data <- diff_data %>% 
   mutate(
     assoc_diff = abs(assoc_1_2 - assoc_3_4)
@@ -471,72 +448,21 @@ diff_data <- diff_data %>%
 ## Correlations
 
 ```{r}
+#summarize across mirror versions
 diff_data_sum <- diff_data %>% 
   group_by(plot, concept, AssocCond, Version, Palette) %>% 
   summarise(
     mean_diff = mean(diff_score),
     mean_AvgEmoPred = mean(AvgEmoPred),
-    mean_YAvgEmoPred = mean(YAvgEmoPred),
-    mean_YAvgEmoPred_diff = mean(Ypred_diff_score),
     mean_assoc_diff = mean(assoc_diff)
   ) %>% 
   ungroup()
 
 ```
 
-```{r}
-diff_corr <- list(
-  
-  #Angry
-  "dots_angry_wa"  = cor.test(diff_data_sum %>% filter(plot == "dot" & concept == "Angry") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "dot" & concept == "Angry") %>% pull(mean_YAvgEmoPred_diff)),
-  "bars_angry_wa"  = cor.test(diff_data_sum %>% filter(plot == "bar" & concept == "Angry") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "bar" & concept == "Angry") %>% pull(mean_YAvgEmoPred_diff)),
-  
-  #Disgust
-  "dots_disgust_wa"= cor.test(diff_data_sum %>% filter(plot == "dot" & concept == "Disgust") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "dot" & concept == "Disgust") %>% pull(mean_YAvgEmoPred_diff)),
-  "bars_disgust_wa"= cor.test(diff_data_sum %>% filter(plot == "bar" & concept == "Disgust") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "bar" & concept == "Disgust") %>% pull(mean_YAvgEmoPred_diff)),
-  
-  #Fearful
-  "dots_fearful_wa"= cor.test(diff_data_sum %>% filter(plot == "dot" & concept == "Fearful") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "dot" & concept == "Fearful") %>% pull(mean_YAvgEmoPred_diff)),
-  "bars_fearful_wa"= cor.test(diff_data_sum %>% filter(plot == "bar" & concept == "Fearful") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "bar" & concept == "Fearful") %>% pull(mean_YAvgEmoPred_diff)),
-  
-  #Happy
-  "dots_happy_wa"  = cor.test(diff_data_sum %>% filter(plot == "dot" & concept == "Happy") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "dot" & concept == "Happy") %>% pull(mean_YAvgEmoPred_diff)),
-  "bars_happy_wa"  = cor.test(diff_data_sum %>% filter(plot == "bar" & concept == "Happy") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "bar" & concept == "Happy") %>% pull(mean_YAvgEmoPred_diff)),
-  
-  #Sad
-  "dots_sad_wa"    = cor.test(diff_data_sum %>% filter(plot == "dot" & concept == "Sad") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "dot" & concept == "Sad") %>% pull(mean_YAvgEmoPred_diff)),
-  "bars_sad_wa"    = cor.test(diff_data_sum %>% filter(plot == "bar" & concept == "Sad") %>% pull(mean_diff), diff_data_sum %>% filter(plot == "bar" & concept == "Sad") %>% pull(mean_YAvgEmoPred_diff))
-)
-
-```
 
 ```{r}
-r_diff_table <- tibble(
-  Model = names(diff_corr),
-  R = sapply(diff_corr, function(x) x$estimate),
-  t = sapply(diff_corr, function(x) x$statistic),
-  df = sapply(diff_corr, function(x) x$parameter[1]),
-  p = sapply(diff_corr, function(x) x$p.value),
-)
-```
-
-```{r}
-r_diff_table <- r_diff_table %>% 
-  mutate(
-    plot  = word(Model, 1, sep = "_"),
-    concept    = str_to_title(word(Model, 2, sep = "_")),
-    model_type = word(Model, 3, sep = "_")
-  )
-
-r_diff_labels <- r_diff_table %>%
-  mutate(
-    label = paste0("R = ", round(R, 2), ", p = ", round(p, 3)),
-    x = 0.45,    # x-position in panel (near right)
-    y = -0.2     # y-position in panel (near bottom)
-  )
-```
-
-```{r}
+#correlations for difference scores and predicted unweighted difference scores
 assoc_diff_corr <- list(
   
   #Angry
@@ -602,7 +528,7 @@ diff_data_sum <- diff_data_sum %>%
 
 # Plot Dots and Bars Assoc Diff Together
 
-Plots of predicted association difference for the stronger and weaker assocaited colors in each plot
+Plots of predicted association difference for the stronger and weaker associated colors in each plot
 
 ```{r}
 p_assoc_diff <- ggplot(diff_data_sum, aes(x = mean_assoc_diff, y = mean_diff)) +
@@ -872,7 +798,7 @@ ggsave(
 
 # Models
 
-Models include separate models for each emotion All - the association difference with plort type full interactive model Dots - assocaition difference for dots Bars - association difference for bars
+Models include separate models for each emotion All - the association difference with plot type full interactive model Dots - association difference for dots Bars - association difference for bars
 
 ```{r}
 #center predictor for interaction model
@@ -880,7 +806,6 @@ Models include separate models for each emotion All - the association difference
 diff_data_int <- diff_data %>% 
   group_by(concept) %>% 
   mutate(
-    Ypred_diff_score_c = Ypred_diff_score - mean(Ypred_diff_score),
     assoc_diff_c = assoc_diff - mean(assoc_diff),
     plot_c = if_else(plot == "bar", .5, -.5)
   ) %>% 
@@ -911,7 +836,6 @@ sad_diff <- diff_data_int %>%
 diff_data_plots <- diff_data %>% 
   group_by(plot, concept) %>% 
   mutate(
-    Ypred_diff_score_c = Ypred_diff_score - mean(Ypred_diff_score),
     assoc_diff_c = assoc_diff - mean(assoc_diff),
     plot_c = if_else(plot == "bar", .5, -.5)
   ) %>% 
@@ -1150,3 +1074,4 @@ sad_bars_m <- lmer(diff_score~assoc_diff_c+(1+assoc_diff_c|subject_id),
                 ))
 summary(sad_bars_m)
 ```
+
